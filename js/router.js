@@ -65,10 +65,10 @@ function render(){
 const MENUS = [
   {id:'main', label:'메인', icon:'🏠'},
   {id:'exercise', label:'운동', icon:'🏋️'},
-  {id:'profile', label:'마이페이지', icon:'👤'},
   {id:'shop', label:'포인트 상점', icon:'🛍️'},
   {id:'crew', label:'홈크루', icon:'🏘️'},
   {id:'ranking', label:'랭킹', icon:'🏆'},
+  {id:'profile', label:'마이페이지', icon:'👤'},
   {id:'support', label:'고객센터', icon:'💬'},
 ];
 function renderApp(){
@@ -109,11 +109,15 @@ function renderApp(){
           renderSupport()}
       </div>
     </div>
-  </div>`;
+  </div>
+  ${state.guestMode ? `<div class="guest-back-fab" onclick="backToLanding()">← 돌아가기</div>` : ''}`;
 }
 function setMenu(id){state.menu=id; render();}
 // 좌측 상단 로고(배너) 클릭 시: 서비스 소개 콘텐츠를 담은 "메인" 카테고리로 이동한다.
 function goHome(){ state.menu='main'; render(); }
+// 비회원이 랜딩 카드를 눌러 앱 화면(startGuestExercise 등)으로 들어온 뒤, 다시 랜딩 페이지로
+// 돌아가고 싶을 때 쓰는 함수 — goto()와 달리 로그인/회원가입 화면이 아니라 소개 페이지로 간다.
+function backToLanding(){ state.guestMode=false; state.screen='intro'; render(); }
 // 로그인 후 첫 화면(메인 카테고리) — 서비스 소개 대신 "나"에 관한 요약 대시보드를 보여준다.
 // 순위·등급비율의 상승/하락 화살표는 실제로는 서버가 어제 대비 오늘 값을 이력으로 갖고
 // 있어야 하지만, 이 프로토타입은 이력을 따로 저장하지 않으므로 (닉네임+오늘 날짜)를 시드로

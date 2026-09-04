@@ -11,7 +11,15 @@ function getCrewPageTabs(){
 // 계속 노출해서, 이 크루가 어떤 성향인지 한눈에 알 수 있게 한다.
 const CREW_CONCEPTS=['다이어트','크루랭킹','친목','근육강화','건강유지'];
 const CREW_EXP_PER_LEVEL=2000; // 크루 레벨업에 필요한 경험치량 (레벨마다 동일하게 고정)
-function setCrewConcept(c){ state.crew.concept=c; render(); }
+const CREW_CONCEPT_MAX=3;
+function setCrewConcept(c){
+  const list=state.crew.concepts;
+  const idx=list.indexOf(c);
+  if(idx>=0) list.splice(idx,1);
+  else if(list.length>=CREW_CONCEPT_MAX){ toast(`컨셉은 최대 ${CREW_CONCEPT_MAX}개까지 선택할 수 있어요`); return; }
+  else list.push(c);
+  render();
+}
 // 우리동네 크루 가입하기 목록. 검색·지역 필터·페이지네이션 데모를 위해 여러 지역에 걸쳐 구성했다.
 const JOINABLE_CREWS=[
   {name:'역삼동 러너스', level:11, score:4820, leader:'써니핏', regionCity:'서울시', regionGu:'강남구', regionDong:'역삼동', desc:'매일 아침 6시 인증 러닝 크루입니다.', concept:'건강유지'},
@@ -27,6 +35,14 @@ const JOINABLE_CREWS=[
   {name:'역삼 런지크루', level:6, score:2200, leader:'런지킹', regionCity:'서울시', regionGu:'강남구', regionDong:'역삼동', desc:'런지 100개 챌린지 진행중.', concept:'크루랭킹'},
   {name:'오룡 조깅단', level:5, score:1900, leader:'조깅단장', regionCity:'전남광주통합특별시', regionGu:'북구', regionDong:'오룡동', desc:'주말마다 함께 조깅해요.', concept:'친목'},
 ];
+// 소개카드에 컨셉 태그를 하나만 보여주면 밋밋해서, 크루당 1~3개를 무작위로 뽑아 붙여준다
+// (원래 concept은 그대로 대표 태그로 유지하고, 검색/카드 표시는 이 concepts 배열을 쓴다).
+function pickRandomConcepts(primary){
+  const count=1+Math.floor(Math.random()*CREW_CONCEPT_MAX);
+  const rest=CREW_CONCEPTS.filter(c=>c!==primary).sort(()=>Math.random()-0.5).slice(0,count-1);
+  return [primary,...rest];
+}
+JOINABLE_CREWS.forEach(c=>{ c.concepts=pickRandomConcepts(c.concept); });
 function renderCrew(){
   const i=state.subtabs.crew;
   if(!state.crew.created){
@@ -37,7 +53,6 @@ function renderCrew(){
     <div class="view-head flex-between">
       <div>
         <h1>홈크루</h1>
-        <p>${creating ? '새 크루를 만들어보세요' : '우리동네 크루에 가입해보세요'}</p>
       </div>
       <button class="btn btn-secondary btn-sm" onclick="${(!creating && state.guestMode) ? "goto('login')" : `setSub('crew',${creating?0:1})`}">${creating?'← 가입하기로 돌아가기':'크루 생성'}</button>
     </div>
@@ -46,7 +61,7 @@ function renderCrew(){
   const tabs=getCrewPageTabs();
   const activeTab=tabs[i]||tabs[0];
   return `
-  <div class="view-head"><h1>${state.crew.name} ${state.crew.concept?`<span class="pill pill-accent" style="vertical-align:middle;">#${state.crew.concept}</span>`:''}</h1><p>크루 메인 → 크루채팅 → 크루공지 → 오늘의 단체 미션 → 크루원 정보</p></div>
+  <div class="view-head"><h1>${state.crew.name} ${(state.crew.concepts||[]).map(c=>`<span class="pill pill-accent" style="vertical-align:middle;">#${c}</span>`).join(' ')}</h1></div>
   <div class="subtabs">
     ${tabs.map((t,idx)=>`<div class="tab ${i===idx?'active':''}" onclick="setSub('crew',${idx})">${t}</div>`).join('')}
   </div>
@@ -68,9 +83,9 @@ function renderCrewCreate(){
     <div class="field"><label for="cr-name">크루 이름</label><input id="cr-name" placeholder="예: 역삼동 스쿼트단"></div>
     <div class="field"><label for="cr-desc">크루 소개</label><textarea id="cr-desc" rows="3" placeholder="어떤 크루인지 소개해주세요"></textarea></div>
     <div class="field">
-      <label>크루 컨셉 (하나 선택, 필수)</label>
+      <label>크루 컨셉 (최대 ${CREW_CONCEPT_MAX}개 선택, 1개 이상 필수)</label>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${CREW_CONCEPTS.map(c=>`<button type="button" class="btn btn-sm ${state.crew.concept===c?'btn-primary':'btn-secondary'}" onclick="setCrewConcept('${c}')">#${c}</button>`).join('')}
+        ${CREW_CONCEPTS.map(c=>`<button type="button" class="btn btn-sm ${state.crew.concepts.includes(c)?'btn-primary':'btn-secondary'}" onclick="setCrewConcept('${c}')">#${c}</button>`).join('')}
       </div>
     </div>
     <button class="btn btn-primary btn-block" onclick="createCrew()">100P로 크루 생성</button>
@@ -78,7 +93,7 @@ function renderCrewCreate(){
 }
 function createCrew(){
   if(state.user.points<100){toast('포인트가 부족합니다'); return;}
-  if(!state.crew.concept){toast('크루 컨셉을 하나 선택해주세요'); return;}
+  if(!state.crew.concepts.length){toast('크루 컨셉을 하나 이상 선택해주세요'); return;}
   const name=document.getElementById('cr-name').value.trim() || '역삼동 스쿼트단';
   const desc=document.getElementById('cr-desc').value.trim() || '함께 성장하는 홈트 크루입니다.';
   // (#8) 중복된 크루명 방지 — 실제로는 DB에 SQL SELECT로 존재 여부를 물어야 한다.
@@ -101,7 +116,36 @@ function createCrew(){
   render();
 }
 const CREW_JOIN_PAGE_SIZE=8;
+function getCrewJoinList(){
+  const s=state.crew;
+  const fCity = s.joinCity && REGION_DATA[s.joinCity] ? s.joinCity : null;
+  const fGu = fCity && s.joinGu && REGION_DATA[fCity][s.joinGu] ? s.joinGu : null;
+  const dongs = fGu ? REGION_DATA[fCity][fGu] : [];
+  const fDong = fGu && s.joinDong && dongs.includes(s.joinDong) ? s.joinDong : null;
+  const concepts = s.joinConcepts||[];
+  return JOINABLE_CREWS.filter(c=>{
+    if(s.joinSearch && !c.name.includes(s.joinSearch)) return false;
+    if(fCity && c.regionCity!==fCity) return false;
+    if(fGu && c.regionGu!==fGu) return false;
+    if(fDong && c.regionDong!==fDong) return false;
+    if(concepts.length && !c.concepts.some(cc=>concepts.includes(cc))) return false;
+    return true;
+  });
+}
+// 검색창 자체는 renderCrewJoin()에서 한 번만 그리고, 이후 검색어 입력은 #crew-join-results
+// 안쪽만 innerHTML로 갈아끼운다 — 검색할 때마다 전체를 다시 그리면(=input을 새 DOM으로
+// 교체하면) 한글 입력 중(조합 중)인 input이 통째로 교체되면서 IME 조합이 끊겨 자음/모음이
+// 따로 입력되는 문제가 있었다. input 노드를 건드리지 않으면 이 문제가 근본적으로 사라진다.
 function renderCrewJoin(){
+  const s=state.crew;
+  return `
+  <div class="field" style="max-width:360px;"><label for="crew-search-input">크루명 검색</label><input id="crew-search-input" placeholder="크루 이름으로 검색" value="${s.joinSearch||''}"
+    oninput="if(!this.dataset.composing) setCrewJoinSearch(this.value)"
+    oncompositionstart="this.dataset.composing='1'"
+    oncompositionend="this.dataset.composing=''; setCrewJoinSearch(this.value)"></div>
+  <div id="crew-join-results">${renderCrewJoinResults()}</div>`;
+}
+function renderCrewJoinResults(){
   const s=state.crew;
   const cities=Object.keys(REGION_DATA);
   const fCity = s.joinCity && REGION_DATA[s.joinCity] ? s.joinCity : null;
@@ -109,24 +153,14 @@ function renderCrewJoin(){
   const fGu = fCity && s.joinGu && REGION_DATA[fCity][s.joinGu] ? s.joinGu : null;
   const dongs = fGu ? REGION_DATA[fCity][fGu] : [];
   const fDong = fGu && s.joinDong && dongs.includes(s.joinDong) ? s.joinDong : null;
+  const concepts = s.joinConcepts||[];
 
-  const list = JOINABLE_CREWS.filter(c=>{
-    if(s.joinSearch && !c.name.includes(s.joinSearch)) return false;
-    if(fCity && c.regionCity!==fCity) return false;
-    if(fGu && c.regionGu!==fGu) return false;
-    if(fDong && c.regionDong!==fDong) return false;
-    if(s.joinConcept && c.concept!==s.joinConcept) return false;
-    return true;
-  });
+  const list = getCrewJoinList();
   const totalPages=Math.max(1, Math.ceil(list.length/CREW_JOIN_PAGE_SIZE));
   const page=Math.min(s.joinPage||1, totalPages);
   const pageItems=list.slice((page-1)*CREW_JOIN_PAGE_SIZE, page*CREW_JOIN_PAGE_SIZE);
 
   return `
-  <div class="field" style="max-width:360px;"><label for="crew-search-input">크루명 검색</label><input id="crew-search-input" placeholder="크루 이름으로 검색" value="${s.joinSearch||''}"
-    oninput="if(!this.dataset.composing) setCrewJoinSearch(this.value)"
-    oncompositionstart="this.dataset.composing='1'"
-    oncompositionend="this.dataset.composing=''; setCrewJoinSearch(this.value)"></div>
   <div class="filter-bar">
     <select onchange="setCrewJoinCity(this.value)">
       <option value="">시 전체</option>
@@ -142,17 +176,17 @@ function renderCrewJoin(){
     </select>
   </div>
   <div class="field" style="margin-top:8px;">
-    <label>크루 컨셉 <span class="hint" style="margin:0;">(선택, 필수 아님)</span></label>
+    <label>크루 컨셉 <span class="hint" style="margin:0;">(최대 ${CREW_CONCEPT_MAX}개 선택, 선택 안 하면 전체)</span></label>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
-      <button type="button" class="btn btn-sm ${!s.joinConcept?'btn-primary':'btn-secondary'}" onclick="setCrewJoinConcept('')">전체</button>
-      ${CREW_CONCEPTS.map(c=>`<button type="button" class="btn btn-sm ${s.joinConcept===c?'btn-primary':'btn-secondary'}" onclick="setCrewJoinConcept('${c}')">#${c}</button>`).join('')}
+      <button type="button" class="btn btn-sm ${!concepts.length?'btn-primary':'btn-secondary'}" onclick="setCrewJoinConcept('')">전체</button>
+      ${CREW_CONCEPTS.map(c=>`<button type="button" class="btn btn-sm ${concepts.includes(c)?'btn-primary':'btn-secondary'}" onclick="setCrewJoinConcept('${c}')">#${c}</button>`).join('')}
     </div>
   </div>
   <div class="grid grid-3">
     ${pageItems.length ? pageItems.map(c=>`
       <div class="card">
         <div class="flex-between"><h3 style="margin:0;">${c.name}</h3><span class="pill pill-gold">Lv.${c.level}</span></div>
-        <span class="pill pill-accent" style="margin-top:6px;">#${c.concept}</span>
+        <div style="margin-top:6px;">${c.concepts.map(cc=>`<span class="pill pill-accent" style="margin-right:4px;">#${cc}</span>`).join('')}</div>
         <p class="desc" style="margin-top:8px;">${c.desc}</p>
         <p class="hint" style="margin:0 0 4px;">${c.regionCity} ${c.regionGu} ${c.regionDong}</p>
         <p class="hint" style="margin:0 0 10px;">크루장 · ${c.leader}</p>
@@ -166,22 +200,37 @@ function renderCrewJoin(){
     <button class="btn btn-sm btn-ghost" ${page>=totalPages?'disabled style="opacity:.4;cursor:not-allowed;"':''} onclick="setCrewJoinPage(${page+1})">다음</button>
   </div>`:''}`;
 }
-function setCrewJoinSearch(v){
-  state.crew.joinSearch=v; state.crew.joinPage=1; render();
-  setTimeout(()=>{ const el=document.getElementById('crew-search-input'); if(el){ el.focus(); el.selectionStart=el.selectionEnd=el.value.length; } },0);
+function refreshCrewJoinResults(){
+  const el=document.getElementById('crew-join-results');
+  if(el) el.innerHTML=renderCrewJoinResults();
 }
-function setCrewJoinCity(v){ state.crew.joinCity=v||null; state.crew.joinGu=null; state.crew.joinDong=null; state.crew.joinPage=1; render(); }
-function setCrewJoinGu(v){ state.crew.joinGu=v||null; state.crew.joinDong=null; state.crew.joinPage=1; render(); }
-function setCrewJoinDong(v){ state.crew.joinDong=v||null; state.crew.joinPage=1; render(); }
-function setCrewJoinConcept(v){ state.crew.joinConcept=v||null; state.crew.joinPage=1; render(); }
-function setCrewJoinPage(p){ state.crew.joinPage=p; render(); }
+function setCrewJoinSearch(v){
+  state.crew.joinSearch=v; state.crew.joinPage=1;
+  refreshCrewJoinResults();
+}
+function setCrewJoinCity(v){ state.crew.joinCity=v||null; state.crew.joinGu=null; state.crew.joinDong=null; state.crew.joinPage=1; refreshCrewJoinResults(); }
+function setCrewJoinGu(v){ state.crew.joinGu=v||null; state.crew.joinDong=null; state.crew.joinPage=1; refreshCrewJoinResults(); }
+function setCrewJoinDong(v){ state.crew.joinDong=v||null; state.crew.joinPage=1; refreshCrewJoinResults(); }
+function setCrewJoinConcept(c){
+  if(!c){ state.crew.joinConcepts=[]; }
+  else{
+    const list=state.crew.joinConcepts||(state.crew.joinConcepts=[]);
+    const idx=list.indexOf(c);
+    if(idx>=0) list.splice(idx,1);
+    else if(list.length>=CREW_CONCEPT_MAX){ toast(`컨셉은 최대 ${CREW_CONCEPT_MAX}개까지 선택할 수 있어요`); return; }
+    else list.push(c);
+  }
+  state.crew.joinPage=1;
+  refreshCrewJoinResults();
+}
+function setCrewJoinPage(p){ state.crew.joinPage=p; refreshCrewJoinResults(); }
 function joinCrew(name){
   const c=JOINABLE_CREWS.find(c=>c.name===name);
   if(!c) return;
   state.crew.created=true;
   state.crew.name=c.name;
   state.crew.desc=c.desc;
-  state.crew.concept=c.concept;
+  state.crew.concepts=c.concepts.slice(0,CREW_CONCEPT_MAX);
   state.crew.region=`${c.regionCity} ${c.regionGu} ${c.regionDong}`;
   state.crew.level=c.level;
   state.crew.exp=Math.round(c.score*0.3);

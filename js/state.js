@@ -44,7 +44,7 @@ const state = {
   shopFilter: '전체',
   itemPreview: {open:false, idx:null},
   crew: {
-    created:false, name:'', desc:'', region:'', concept:null,
+    created:false, name:'', desc:'', region:'', concepts:[],
     members:[],
     notices:[
       {who:'써니핏', title:'우리 크루 단톡방 안내', body:"카카오톡 오픈채팅방에서 '123' 검색해서 들어와주세요!", date:'08.20'},

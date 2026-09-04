@@ -41,7 +41,6 @@ function exerciseStepHead(){
   return `
   <div class="view-head">
     <h1>운동</h1>
-    <p>운동 종목 선택 → 튜토리얼 → 웹캠 촬영(리플레이 분석 포함) → 결과·점수 저장</p>
   </div>
   <div class="subtabs">
     ${EX_STEPS.map((s,i)=>`<div class="tab ${state.exercise.step===i?'active':''}">${i+1}. ${s}</div>`).join('')}
@@ -57,6 +56,17 @@ function renderExercise(){
   return exerciseStepHead()+body;
 }
 
+// 종목 카드 아이콘 — 이니셜 텍스트 대신 실제 자세(앉은 자세 등)를 알아볼 수 있는 작은
+// 스틱 피규어 SVG. 캐릭터 디자인과는 무관하게 자세만 표현하면 되므로 여기서 직접 그린다.
+const EX_ICONS = {
+  squat: `<svg viewBox="0 0 48 48" width="26" height="26" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="31" cy="9" r="5" fill="currentColor" stroke="none"/>
+    <path d="M31 15 L25 28"/>
+    <path d="M25 28 L13 32"/>
+    <path d="M13 32 L19 44"/>
+    <path d="M28 18 L9 16"/>
+  </svg>`,
+};
 function renderExStepPick(){
   const limit=getDailySetLimit();
   const used=state.user.setsUsedToday||0;
@@ -71,10 +81,9 @@ function renderExStepPick(){
   <div class="grid grid-3">
     ${EXS.map(e=>`
       <div class="card exercise-card ${state.exercise.picked===e.id?'selected':''}" onclick="pickExercise('${e.id}')">
-        <div class="ex-badge">${e.name.charAt(0)}</div>
+        <div class="ex-badge">${EX_ICONS[e.id]||e.name.charAt(0)}</div>
         <h3>${e.name}</h3>
         <p class="desc">타겟: ${e.target}</p>
-        <span class="pill pill-accent">${e.level}</span>
       </div>`).join('')}
   </div>
   <div style="margin-top:20px;max-width:420px;">

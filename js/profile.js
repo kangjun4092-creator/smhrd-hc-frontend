@@ -8,7 +8,7 @@ function renderProfile(){
     i===2?renderHistory():
     renderSetAccount();
   return `
-  <div class="view-head"><h1>마이페이지</h1><p>캐릭터 꾸미기·미션·운동 기록부터 계정·설정 관리까지 한 곳에서 확인하세요.</p></div>
+  <div class="view-head"><h1>마이페이지</h1></div>
   <div class="subtabs">
     ${PROFILE_TABS.map((t,idx)=>`<div class="tab ${i===idx?'active':''}" onclick="setSub('profile',${idx})">${t}</div>`).join('')}
   </div>

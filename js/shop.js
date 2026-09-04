@@ -2,7 +2,7 @@
 
 function renderShop(){
   return `
-  <div class="view-head"><h1>포인트 상점</h1><p>포인트로 아이템을 구매해 캐릭터에 착용하거나 능력치를 얻어보세요</p></div>
+  <div class="view-head"><h1>포인트 상점</h1></div>
   ${renderMissionShop()}`;
 }
 const SHOP_CATEGORIES=['전체','의상','배경','기타'];

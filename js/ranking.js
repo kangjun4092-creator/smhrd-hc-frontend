@@ -4,7 +4,7 @@ const RANK_TABS=['지역별 랭킹','운동 종목별 랭킹','크루 랭킹'];
 function renderRanking(){
   const i=state.subtabs.ranking;
   return `
-  <div class="view-head"><h1>랭킹</h1><p>지역별 랭킹 → 운동 종목별 랭킹 → 크루 랭킹</p></div>
+  <div class="view-head"><h1>랭킹</h1></div>
   <div class="subtabs">
     ${RANK_TABS.map((t,idx)=>`<div class="tab ${i===idx?'active':''}" onclick="setSub('ranking',${idx})">${t}</div>`).join('')}
   </div>

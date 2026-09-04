@@ -4,7 +4,7 @@ function renderSupport(){
   const s=state.support;
   const list = s.filter==='all' ? s.tickets : s.tickets.filter(t=>t.status===s.filter);
   return `
-  <div class="view-head"><h1>고객센터</h1><p>불편사항접수 게시판 — Error 신고 및 추후 추가사항 의견을 접수하고 처리 현황을 확인합니다.</p></div>
+  <div class="view-head"><h1>고객센터</h1></div>
   <div class="flex-between" style="margin-bottom:14px;">
     <div class="filter-bar" style="margin:0;">
       ${['all','접수','처리중','답변완료'].map(f=>`

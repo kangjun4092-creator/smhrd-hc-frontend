@@ -87,7 +87,7 @@ function buyItem(idx){
    ======================================================================== */
 // (FR-CR-001~005) 크루 생성/가입/배분/강퇴/공지/가입승인은 모두 아래 파이프라인이 필요한 구간입니다.
 //   크루 생성(createCrew) / 가입(joinCrew) > Java 크루 API > DB 연결 > SQL INSERT(크루 테이블, 크루원 테이블)
-//   단체 미션 배분(setCrewMissionEx 등) > Java 크루 API > DB 연결 > SQL UPDATE(미션 배분 테이블)
+//   크루 단체미션 진행도 갱신(saveExerciseResult에서 자동 반영) > Java 크루 API > DB 연결 > SQL UPDATE(크루 미션 진행도)
 //   가입 요청 승인(approveJoinRequest) > Java 크루 API > DB 연결 > SQL INSERT(크루원) + DELETE(가입요청)
 //   크루원 강퇴(kickMember) > Java 크루 API > DB 연결 > SQL DELETE(크루원 테이블)
 //   크루공지 작성(postCrewNotice, 팀장 전용) > Java 크루 API(권한 확인) > DB 연결 > SQL INSERT(공지 테이블)

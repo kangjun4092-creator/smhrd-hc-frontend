@@ -1,6 +1,11 @@
 // calibration.js — 웹캠 체형 캘리브레이션(MediaPipe Pose). 회원가입 중, 또는 운동 시작 전 필요 시 모달로 열립니다.
 
 const CAL_REQUIRED_HOLD_MS = 2000;
+const CAL_RING_CIRC = 226; // 2π·36 — exercise.js의 cam-ready-overlay 원형 게이지와 반지름을 맞췄다
+function setCalRingPct(pct){
+  const el=document.getElementById('cal-hold-ring');
+  if(el) el.style.strokeDashoffset = CAL_RING_CIRC*(1-Math.max(0,Math.min(1,pct)));
+}
 const CAL_VIS_THRESHOLD = 0.55;
 const CAL_DIST_MIN = 0.45;
 const CAL_DIST_MAX = 0.85;
@@ -91,9 +96,18 @@ function calBmiCategory(bmi){
 }
 function calUpdateBmiLabel(){
   const lbl=document.getElementById('cal-bmi-label');
-  if(!lbl) return;
   const {heightCm,weightKg,bmi}=calGetBodyInfo();
-  if(!heightCm || !weightKg){ lbl.textContent='체형 정보를 입력하면 가이드 실루엣이 내 체형에 맞게 조정돼요.'; return; }
+  const ready=!!(heightCm && weightKg);
+  const startBtn=document.getElementById('cal-start-btn');
+  if(startBtn){
+    startBtn.disabled=!ready;
+    startBtn.style.opacity=ready?'1':'.4';
+    startBtn.style.cursor=ready?'pointer':'not-allowed';
+  }
+  const startHint=document.getElementById('cal-start-hint');
+  if(startHint) startHint.style.display=ready?'none':'block';
+  if(!lbl) return;
+  if(!ready){ lbl.textContent='체형 정보를 입력하면 가이드 실루엣이 내 체형에 맞게 조정돼요.'; return; }
   lbl.textContent = `BMI ${bmi.toFixed(1)} · ${calBmiCategory(bmi)} 기준으로 실루엣을 보정했어요.`;
 }
 // BMI가 높을수록 실루엣 폭을 넓게, 키가 클수록 하체 비중을 늘려 힙 위치를 살짝 올려준다.
@@ -338,8 +352,8 @@ function calLoop(){
     calSetCheck('cal-check-dist', false);
     calSetCheck('cal-check-center', false);
     calHoldStart=null;
-    const bar=document.getElementById('cal-hold-bar'); if(bar) bar.style.width='0%';
-    const lbl=document.getElementById('cal-hold-label'); if(lbl) lbl.textContent='보정 유지 시간 (사람이 인식되지 않았습니다)';
+    setCalRingPct(0);
+    const lbl=document.getElementById('cal-hold-label'); if(lbl) lbl.textContent='사람이 인식되지 않았어요';
     return;
   }
 
@@ -350,15 +364,14 @@ function calLoop(){
   calSetCheck('cal-check-dist', checks.bodyOk ? checks.distOk : null);
   calSetCheck('cal-check-center', checks.bodyOk ? checks.centerOk : null);
 
-  const bar=document.getElementById('cal-hold-bar');
   const lbl=document.getElementById('cal-hold-label');
   if(checks.all){
-    if(!calHoldStart) calHoldStart=ts;
+    if(!calHoldStart){ calHoldStart=ts; speakFeedback('자세를 보정중입니다'); }
     const elapsed=ts-calHoldStart;
-    const pct=Math.min(100,(elapsed/CAL_REQUIRED_HOLD_MS)*100);
-    if(bar) bar.style.width=pct+'%';
-    if(lbl) lbl.textContent=`보정 유지 시간 (${(elapsed/1000).toFixed(1)}s / ${(CAL_REQUIRED_HOLD_MS/1000).toFixed(1)}s)`;
+    setCalRingPct(elapsed/CAL_REQUIRED_HOLD_MS);
+    if(lbl) lbl.textContent='좋아요! 이 자세를 유지해주세요';
     if(elapsed>=CAL_REQUIRED_HOLD_MS){
+      speakFeedback('보정이 완료되었습니다');
       const profile=calComputeProfile(landmarks);
       calStopCamera();
       state.signup.calProfile=profile;
@@ -367,14 +380,14 @@ function calLoop(){
     }
   } else {
     calHoldStart=null;
-    if(bar) bar.style.width='0%';
+    setCalRingPct(0);
     const reasons=[];
     if(!checks.bodyOk) reasons.push('전신이 프레임에 보이지 않습니다');
     else{
       if(!checks.distOk) reasons.push(checks.bodyHeightRatio<CAL_DIST_MIN ? '카메라와 더 가까이 서주세요' : '카메라와 더 멀리 떨어져주세요');
       if(!checks.centerOk) reasons.push('화면 중앙으로 이동해주세요');
     }
-    if(lbl) lbl.textContent='보정 유지 시간 ('+reasons.join(' · ')+')';
+    if(lbl) lbl.textContent=reasons.join(' · ');
   }
 }
 
@@ -393,36 +406,46 @@ function renderCalibrationModal(){
 
 function renderCalLive(s){
   return `
+  <div class="card" style="margin-bottom:16px;">
+    <p class="section-label" style="margin:0 0 4px;">체형 정보 먼저 입력하기</p>
+    <p class="hint" style="margin:0 0 12px;">키·몸무게를 입력해야 내 체형에 맞는 가이드 실루엣이 만들어지고, 카메라 촬영을 시작할 수 있어요.</p>
+    <div class="field" style="margin-bottom:0;">
+      <label>캐릭터 성별</label>
+      <div class="subtabs" style="margin-bottom:0;">
+        <div class="tab cal-gender-tab ${s.gender!=='female'?'active':''}" data-gender="male" onclick="setCalGender('male')">남성</div>
+        <div class="tab cal-gender-tab ${s.gender==='female'?'active':''}" data-gender="female" onclick="setCalGender('female')">여성</div>
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:16px;">
+      <div class="field"><label>키 (cm)</label><input type="number" id="cal-height-input" placeholder="예: 170" oninput="calUpdateBmiLabel()"></div>
+      <div class="field"><label>몸무게 (kg)</label><input type="number" id="cal-weight-input" placeholder="예: 65" oninput="calUpdateBmiLabel()"></div>
+    </div>
+    <p class="hint" id="cal-bmi-label" style="margin:0;">체형 정보를 입력하면 가이드 실루엣이 내 체형에 맞게 조정돼요.</p>
+  </div>
   <div class="grid cal-grid">
     <div>
       <div class="cam-stage" style="aspect-ratio:3/4;max-height:70vh;">
         <video id="cal-video" autoplay playsinline muted style="transform:scaleX(-1);width:100%;height:100%;object-fit:cover;"></video>
         <canvas class="cam-overlay-canvas" id="cal-canvas" style="transform:scaleX(-1);"></canvas>
         <div class="cam-badge"><span class="rec-dot"></span><span id="cal-fps-badge">대기중</span></div>
+        <div class="cam-ready-overlay show">
+          <div class="ready-ring">
+            <svg viewBox="0 0 84 84" width="84" height="84">
+              <circle class="ring-track" cx="42" cy="42" r="36"/>
+              <circle class="ring-fill" id="cal-hold-ring" cx="42" cy="42" r="36"/>
+            </svg>
+          </div>
+          <div class="msg" id="cal-hold-label">보정 유지 시간</div>
+        </div>
       </div>
-      <button class="btn btn-primary btn-block" id="cal-start-btn" style="margin-top:12px;" onclick="calStartCamera()">카메라 시작</button>
+      <button class="btn btn-primary btn-block" id="cal-start-btn" style="margin-top:12px;opacity:.4;cursor:not-allowed;" disabled onclick="calStartCamera()">카메라 시작</button>
+      <p class="hint" id="cal-start-hint" style="margin-top:6px;">키·몸무게를 먼저 입력해주세요.</p>
       ${s.calError ? `<p class="hint" style="color:var(--danger);margin-top:8px;">${s.calError}</p>` : ''}
     </div>
     <div>
       <div class="check" id="cal-check-body"><span class="dot"></span>전신 인식 (머리~발목)</div>
       <div class="check" id="cal-check-dist" style="margin-top:8px;"><span class="dot"></span>적정 거리</div>
       <div class="check" id="cal-check-center" style="margin-top:8px;"><span class="dot"></span>중앙 정렬</div>
-      <div style="margin-top:12px;">
-        <div class="hint" id="cal-hold-label">보정 유지 시간</div>
-        <div class="progress" style="margin-top:6px;"><span id="cal-hold-bar" style="width:0%"></span></div>
-      </div>
-      <div class="field" style="margin-top:16px;">
-        <label>캐릭터 성별</label>
-        <div class="subtabs" style="margin-bottom:0;">
-          <div class="tab cal-gender-tab ${s.gender!=='female'?'active':''}" data-gender="male" onclick="setCalGender('male')">남성 캐릭터</div>
-          <div class="tab cal-gender-tab ${s.gender==='female'?'active':''}" data-gender="female" onclick="setCalGender('female')">여성 캐릭터</div>
-        </div>
-      </div>
-      <div class="field-row" style="margin-top:16px;">
-        <div class="field"><label>키 (cm)</label><input type="number" id="cal-height-input" placeholder="예: 170" oninput="calUpdateBmiLabel()"></div>
-        <div class="field"><label>몸무게 (kg)</label><input type="number" id="cal-weight-input" placeholder="예: 65" oninput="calUpdateBmiLabel()"></div>
-      </div>
-      <p class="hint" id="cal-bmi-label">체형 정보를 입력하면 가이드 실루엣이 내 체형에 맞게 조정돼요.</p>
       <button class="btn btn-ghost btn-block" style="margin-top:14px;" onclick="closeCalibrationModal()">닫기</button>
     </div>
   </div>`;
@@ -438,14 +461,9 @@ function renderCalDone(s){
         <canvas id="cal-edit-canvas" style="width:100%;height:100%;display:block;cursor:grab;"></canvas>
       </div>
       <p class="hint" style="margin-top:8px;">보정 완료 · ${new Date(p.createdAt).toLocaleString()} · 점을 드래그하면 관절 위치를 바로 수정할 수 있어요.</p>
-      <div id="cal-edit-point-list" style="display:flex;flex-direction:column;gap:5px;margin-top:10px;max-height:210px;overflow-y:auto;"></div>
     </div>
     <div>
-      <div class="stat-row" style="margin:0 0 12px;">
-        <div class="stat-box"><div class="num mono" id="cal-edit-m-shoulder">${p.normalized.shoulderWidth}</div><div class="lbl">어깨너비</div></div>
-        <div class="stat-box"><div class="num mono" id="cal-edit-m-height">${p.normalized.bodyHeightRatio}</div><div class="lbl">신장비율</div></div>
-        ${bi.bmi ? `<div class="stat-box"><div class="num mono">${bi.bmi}</div><div class="lbl">BMI</div></div>` : ''}
-      </div>
+      ${bi.bmi ? `<div class="stat-row" style="margin:0 0 12px;"><div class="stat-box"><div class="num mono">${bi.bmi}</div><div class="lbl">BMI</div></div></div>` : ''}
       <button class="btn btn-primary btn-block" onclick="calApply()">이 보정값 적용하기</button>
       <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="calRetake()">다시 촬영</button>
       <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="closeCalibrationModal()">닫기</button>
@@ -521,26 +539,7 @@ function calEditRender(){
     ctx.fillStyle=color; ctx.fill();
     if(isSel){ ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke(); }
   });
-  calEditUpdatePointList();
 }
-function calEditUpdatePointList(){
-  const list=document.getElementById('cal-edit-point-list');
-  const profile=state.signup.calProfile;
-  if(!list || !profile) return;
-  const pts=profile.landmarks;
-  list.innerHTML=CAL_EDIT_POINTS.map(({key,label,color})=>{
-    const p=pts[key]; if(!p) return '';
-    const sel=key===calEditSelectedKey;
-    return `<div onclick="calEditSelectPoint('${key}')" style="display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 10px;border-radius:8px;background:var(--surface-2);cursor:pointer;border:1px solid ${sel?'var(--accent)':'transparent'};color:${sel?'var(--accent)':'inherit'};">
-      <span style="width:9px;height:9px;border-radius:50%;background:${color};flex:none;"></span>${label}
-      <span class="mono" style="margin-left:auto;font-size:11px;color:var(--ink-faint);">${p.x.toFixed(3)}, ${p.y.toFixed(3)}</span>
-    </div>`;
-  }).join('');
-  const m=profile.normalized;
-  const shEl=document.getElementById('cal-edit-m-shoulder'); if(shEl) shEl.textContent=m.shoulderWidth;
-  const htEl=document.getElementById('cal-edit-m-height'); if(htEl) htEl.textContent=m.bodyHeightRatio;
-}
-function calEditSelectPoint(key){ calEditSelectedKey=key; calEditRender(); }
 function calEditCanvasPos(evt){
   const canvas=document.getElementById('cal-edit-canvas');
   const rect=canvas.getBoundingClientRect();

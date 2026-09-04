@@ -30,9 +30,18 @@ const EXERCISE_REP_TARGET = 10; // 실시간 판정이 지원되는 운동(스�
 // 세션을 저장할 때마다 늘어난다(재촬영은 이미 FREE_RETAKES/티켓으로 따로 제한되므로 여기 세지 않음).
 const EXERCISE_DAILY_SETS_BASE = 3;
 function getDailySetLimit(){ return EXERCISE_DAILY_SETS_BASE + Math.floor((state.user.level||1)/5) + (state.user.extraSets||0); }
-const CAM_FINAL_COUNTDOWN_SECONDS = 5; // 정렬이 완료된 뒤 실제 촬영 시작까지의 음성 카운트다운
-const CAM_ALIGN_HOLD_MS = 700; // 정렬 조건이 이 시간 이상 계속 유지돼야 카운트다운 시작(흔들림 방지)
+const CAM_FINAL_COUNTDOWN_SECONDS = 3; // 자세 보정이 끝난 뒤 실제 촬영 시작까지의 음성 카운트다운(3,2,1,스타트!)
+const CAM_ALIGN_HOLD_MS = 2000; // 정렬(자세 보정) 원형 게이지가 다 차기까지 유지해야 하는 시간
 const CAM_GUIDE_SPEAK_INTERVAL_MS = 2500; // 같은 안내 음성이 너무 자주 반복되지 않도록 하는 간격
+const CAM_READY_RING_CIRC = 226; // 2π·36 (cam-ready-overlay 원형 게이지 반지름 36과 맞춘 둘레)
+function setReadyRingPct(pct){
+  const el=document.getElementById('cam-ready-ring');
+  if(el) el.style.strokeDashoffset = CAM_READY_RING_CIRC*(1-Math.max(0,Math.min(1,pct)));
+}
+function showReadyRing(show){
+  const el=document.getElementById('cam-ready-ring-wrap');
+  if(el) el.style.display=show?'flex':'none';
+}
 // 허리(상체) 각도 기준값. 튜토리얼 영상에서 별도로 뽑은 값이 아니라, 일반적인 스쿼트 안전
 // 자세 기준으로 잡은 값이라 나중에 tools/extract-exercise-reference.html처럼 실측 보정 가능.
 const TORSO_STANDING_MIN_ANGLE = 130; // 정렬(서있는) 단계에서 허리가 곧게 펴져 있다고 볼 최소 각도(완화됨)
@@ -42,7 +51,7 @@ function exerciseStepHead(){
   <div class="view-head">
     <h1>운동</h1>
   </div>
-  <div class="subtabs">
+  <div class="subtabs subtabs-compact">
     ${EX_STEPS.map((s,i)=>`<div class="tab ${state.exercise.step===i?'active':''}">${i+1}. ${s}</div>`).join('')}
   </div>`;
 }
@@ -84,13 +93,11 @@ function renderExStepPick(){
         <div class="ex-badge">${EX_ICONS[e.id]||e.name.charAt(0)}</div>
         <h3>${e.name}</h3>
         <p class="desc">타겟: ${e.target}</p>
+        <button class="btn btn-primary btn-block" style="margin-top:12px;${(state.exercise.picked===e.id && !noSetsLeft)?'':'opacity:.4;cursor:not-allowed;'}" ${(state.exercise.picked===e.id && !noSetsLeft)?'':'disabled'} onclick="event.stopPropagation();goToTutorial()">운동 시작하기</button>
       </div>`).join('')}
   </div>
   <div style="margin-top:20px;max-width:420px;">
     ${renderTutorialMissionList()}
-  </div>
-  <div style="margin-top:20px;">
-    <button class="btn btn-primary" ${(state.exercise.picked && !noSetsLeft)?'':'disabled'} style="${(state.exercise.picked && !noSetsLeft)?'':'opacity:.4;cursor:not-allowed;'}" onclick="goToTutorial()">운동 시작하기</button>
   </div>`;
 }
 function pickExercise(id){state.exercise.picked=id; render();}
@@ -100,7 +107,32 @@ function resetExerciseWizard(){
   state.exercise={step:0, picked:null, camPhase:'idle', camStream:null, timerId:null, seconds:0, result:null, retakesUsed:0, liveReps:[], replayOpen:false};
   render();
 }
-function goExStep(n){state.exercise.step=n; render();}
+function goExStep(n){
+  state.exercise.step=n; render();
+  if(n===1) startTutorialGate(); // 튜토리얼에 들어올 때마다(뒤로 왔다가 다시 와도) 대기시간을 새로 건다
+}
+// 튜토리얼을 최소 몇 초는 보게 한 뒤에 "웹캠 촬영 시작" 버튼을 눌러 다음 단계로 넘어갈 수
+// 있게 한다 — 버튼 라벨에 남은 초를 직접 보여주고, 다 되면 disabled를 풀고 문구를 되돌린다.
+const TUTORIAL_GATE_SECONDS = 5;
+function startTutorialGate(){
+  let left=TUTORIAL_GATE_SECONDS;
+  const btn=document.getElementById('ex-tutorial-start-btn');
+  if(!btn) return;
+  btn.textContent=`웹캠 촬영 시작 (${left}초)`;
+  const tick=()=>{
+    const b=document.getElementById('ex-tutorial-start-btn');
+    if(!b) return; // 다른 화면으로 이동하면 자연 종료
+    left--;
+    if(left>0){
+      b.textContent=`웹캠 촬영 시작 (${left}초)`;
+      setTimeout(tick,1000);
+    } else {
+      b.textContent='웹캠 촬영 시작';
+      b.disabled=false; b.style.opacity='1'; b.style.cursor='pointer';
+    }
+  };
+  setTimeout(tick,1000);
+}
 // 회원가입 시점에는 캘리브레이션이 선택사항이었지만(그냥 둘러보는 사람도 있어서), 실제로
 // 운동을 시작하려는 시점(튜토리얼 진입)부터는 필수로 막는다 — 자세 분석 정확도를 위해 체형
 // 보정값이 반드시 있어야 하기 때문. 아직 보정을 안 했다면 캘리브레이션 모달부터 띄운다.
@@ -135,12 +167,12 @@ function renderExStepTutorial(){
         <li><span class="num">3</span>무릎이 발끝을 넘지 않도록 각도를 유지합니다.</li>
         <li><span class="num">4</span>동작 최저점에서 1초 정지 후 천천히 복귀합니다.</li>
       </ul>
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="goExStep(0)">이전</button>
+        <button class="btn btn-primary" id="ex-tutorial-start-btn" disabled style="opacity:.5;cursor:not-allowed;" onclick="goExStep(2)">웹캠 촬영 시작 (${TUTORIAL_GATE_SECONDS}초)</button>
+      </div>
     </div>
     ${isSquat ? renderTutorialMissionList() : ''}
-  </div>
-  <div style="margin-top:20px;display:flex;gap:8px;">
-    <button class="btn btn-ghost" onclick="goExStep(0)">이전</button>
-    <button class="btn btn-primary" onclick="goExStep(2)">웹캠 촬영 시작</button>
   </div>`;
 }
 // 종목선택·튜토리얼 화면에 개인 일일 미션과 각각의 진행 개수·보상 포인트를 보여준다 —
@@ -173,14 +205,24 @@ function renderExStepCam(){
   return `
   <div class="grid cal-grid">
     <div>
-      <div class="cam-stage" id="cam-stage" style="max-height:85vh;">
+      <div class="cam-stage" id="cam-stage">
         <div class="cam-placeholder" id="cam-placeholder">카메라를 확인하는 중...<br>브라우저의 카메라 권한을 허용해주세요.</div>
         <video id="cam-video" autoplay playsinline muted style="display:none;"></video>
         <canvas class="cam-overlay-canvas" id="cam-canvas"></canvas>
         <div class="cam-badge"><span class="rec-dot"></span><span id="cam-status">대기중</span></div>
         <div class="cam-timer mono" id="cam-timer">00:00</div>
+        <div class="cam-live-stats">
+          <div class="stat"><span class="num mono" id="live-reps">0${isSquat?` / ${EXERCISE_REP_TARGET}`:''}</span><span class="lbl">인식 횟수</span></div>
+          <div class="stat"><span class="num mono" id="live-acc">--%</span><span class="lbl">추정 정확도</span></div>
+        </div>
         <div id="cam-grade-flash" class="cam-grade-flash"></div>
         <div id="cam-ready-overlay" class="cam-ready-overlay">
+          <div class="ready-ring" id="cam-ready-ring-wrap" style="display:none;">
+            <svg viewBox="0 0 84 84" width="84" height="84">
+              <circle class="ring-track" cx="42" cy="42" r="36"/>
+              <circle class="ring-fill" id="cam-ready-ring" cx="42" cy="42" r="36"/>
+            </svg>
+          </div>
           <div class="count" id="cam-ready-count"></div>
           <div class="msg" id="cam-ready-msg">화면 속 스켈레톤에 맞춰 자리를 잡아주세요</div>
         </div>
@@ -206,11 +248,6 @@ function renderExStepCam(){
           : `<li><span class="num">·</span>YOLO-Pose가 관절 keypoint를 실시간 추적합니다.</li>
              <li><span class="num">·</span>촬영 종료 시 자동으로 리플레이 분석이 시작됩니다.</li>`}
       </ul>
-      <p class="section-label" style="margin-top:18px;">실시간 인식 상태</p>
-      <div class="stat-row" style="margin:0;">
-        <div class="stat-box"><div class="num mono" id="live-reps">0${isSquat?` / ${EXERCISE_REP_TARGET}`:''}</div><div class="lbl">인식 횟수</div></div>
-        <div class="stat-box"><div class="num mono" id="live-acc">--%</div><div class="lbl">추정 정확도</div></div>
-      </div>
     </div>
   </div>`;
 }
@@ -244,6 +281,36 @@ function setupCamera(){
 function startPoseFeedback(){
   if(state.exercise.picked==='squat' && state.exercise.camStream) exStartPoseLoop();
   else startSkeletonLoop();
+  // 크루대전은 개인별로 "촬영 시작"을 눌러 알아서 시작하는 방식(1인 운동 화면과 동일한 정렬
+  // 유지+카운트다운)이 아니라, 카메라가 켜지는 순간부터 다 같이 보는 공용 10초 카운트다운을
+  // 태워서 모두 같은 순간에 측정이 시작되게 한다 — 보정이 빠른 사람이 혼자 먼저 시작해버려
+  // 팀원마다 측정 시작 시점이 어긋나는 문제 때문에 추가.
+  if(state.crewBattle && !state.crewBattle.result) startBattleReadyCountdown();
+}
+let exBattleCountdownStarted=false;
+const CAM_BATTLE_COUNTDOWN_SECONDS=10;
+function startBattleReadyCountdown(){
+  if(exBattleCountdownStarted) return;
+  exBattleCountdownStarted=true;
+  let left=CAM_BATTLE_COUNTDOWN_SECONDS;
+  const tick=()=>{
+    const el=document.getElementById('cam-battle-countdown');
+    if(!el) return; // 화면 이동 시 자연 종료
+    if(left>0){
+      el.textContent=left;
+      left--;
+      setTimeout(tick,1000);
+    } else {
+      el.textContent='START';
+      beginRecording();
+      startBattleTicker(); // 상대팀·팀원 점수도 이 순간부터 같이 오르기 시작한다 (crew.js)
+      setTimeout(()=>{
+        const e2=document.getElementById('cam-battle-countdown');
+        if(e2) e2.textContent='';
+      },3000);
+    }
+  };
+  tick();
 }
 function startSkeletonLoop(){
   const canvas=document.getElementById('cam-canvas');
@@ -630,13 +697,23 @@ async function exStartPoseLoop(){
         const msgEl=document.getElementById('cam-ready-msg');
         if(result.ok){
           if(msgEl) msgEl.textContent=result.msg;
-          if(exAlignedSince==null) exAlignedSince=performance.now();
-          if(!exFinalCountdownActive && performance.now()-exAlignedSince>=CAM_ALIGN_HOLD_MS){
+          if(exAlignedSince==null){
+            exAlignedSince=performance.now();
+            showReadyRing(true);
+            speakFeedback('자세를 보정중입니다');
+          }
+          const heldMs=performance.now()-exAlignedSince;
+          setReadyRingPct(heldMs/CAM_ALIGN_HOLD_MS);
+          if(!exFinalCountdownActive && heldMs>=CAM_ALIGN_HOLD_MS){
             exFinalCountdownActive=true;
+            showReadyRing(false);
+            speakFeedback('스쿼트를 시작합니다');
             startFinalCountdown();
           }
         } else {
           exAlignedSince=null;
+          showReadyRing(false);
+          setReadyRingPct(0);
           if(msgEl) msgEl.textContent=result.msg;
           const now=performance.now();
           if(now-exLastGuideSpeakTs>CAM_GUIDE_SPEAK_INTERVAL_MS){
@@ -652,12 +729,16 @@ async function exStartPoseLoop(){
 
 // "촬영 시작"을 눌러도 곧바로 판정하지 않는다. exStartPoseLoop의 'ready' 분기(exCheckAlignment)가
 // 매 프레임 거리·중앙정렬·방향(2시)·다리너비·허리자세를 확인하면서 음성으로 안내하고, 그 조건이
-// CAM_ALIGN_HOLD_MS 이상 계속 유지되면 startFinalCountdown()이 5초 음성 카운트다운을 한 뒤
-// beginRecording()으로 넘어간다. (준비 안 된 상태에서 바로 판정을 시작하면 첫 렙이 무조건
-// MISS로 잘못 찍히는 문제 때문에 추가)
+// CAM_ALIGN_HOLD_MS 이상 계속 유지되면(원형 게이지가 다 차면) startFinalCountdown()이 3초
+// 음성 카운트다운을 한 뒤 beginRecording()으로 넘어간다. (준비 안 된 상태에서 바로 판정을
+// 시작하면 첫 렙이 무조건 MISS로 잘못 찍히는 문제 때문에 추가)
 function toggleRecording(){
   const isSquat = state.exercise.picked==='squat';
   if(state.exercise.camPhase==='idle'){
+    // "촬영 시작"을 누른 순간부터는 버튼·안내 카드를 더 볼 일이 없으니, 모바일에서 무릎
+    // 각도까지 잘 보이도록 웹캠 화면을 한 단계 더 키운다(모바일 전용, style.css 참고).
+    const stage=document.getElementById('cam-stage');
+    if(stage) stage.classList.add('cam-grown');
     if(isSquat) startAlignmentGuide();
     else beginRecording();
     return;
@@ -678,11 +759,14 @@ function startAlignmentGuide(){
   if(overlay) overlay.classList.add('show');
   if(countEl) countEl.textContent='';
   if(msgEl) msgEl.textContent='화면 속 스켈레톤에 맞춰 자리를 잡아주세요';
+  showReadyRing(false);
+  setReadyRingPct(0);
   speakFeedback('카메라 각도와 거리에 맞춰 자리를 잡아주세요');
 }
-// 정렬이 완료된 뒤 호출: "5,4,3,2,1,시작!"을 화면·음성으로 동시에 보여주고 beginRecording()으로
-// 넘어간다. 아라비아 숫자를 그대로 읽히면 TTS 엔진에 따라 발음이 흔들릴 수 있어 한글 숫자로 읽는다.
-const CAM_COUNTDOWN_WORDS = ['오','사','삼','이','일'];
+// 자세 보정(원형 게이지)이 끝난 뒤 호출: "3,2,1,스타트!"를 화면·음성으로 동시에 보여주고
+// beginRecording()으로 넘어간다. 아라비아 숫자를 그대로 읽히면 TTS 엔진에 따라 발음이
+// 흔들릴 수 있어 한글 숫자로 읽는다.
+const CAM_COUNTDOWN_WORDS = ['삼','이','일'];
 function startFinalCountdown(){
   const msgEl=document.getElementById('cam-ready-msg');
   if(msgEl) msgEl.textContent='자세가 완벽해요! 이대로 유지해주세요';
@@ -696,8 +780,8 @@ function startFinalCountdown(){
       left--;
       setTimeout(tick,1000);
     } else {
-      if(countEl) countEl.textContent='START!';
-      speakFeedback('시작!');
+      if(countEl) countEl.textContent='스타트!';
+      speakFeedback('스타트!');
       const overlay=document.getElementById('cam-ready-overlay'); if(overlay) overlay.classList.remove('show');
       const btn=document.getElementById('cam-toggle');
       if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer'; }
@@ -1049,6 +1133,12 @@ function saveExerciseResult(){
     c.sessions += 1;
     if(gc.MISS===0) c.missFreeSession += 1;
     if(r.acc>=90) c.accSession += 1;
+  }
+  // 크루 단체미션: 오늘의 크루미션 종목과 같은 운동을 완료하면 그만큼 크루 종합 점수에 더해진다
+  // (크루원 각자의 운동이 곧 크루 미션 진행도가 되는 방식 — 별도 개인 배분 없음).
+  if(state.crew.created && r.ex===state.crew.groupMission.ex){
+    const gm=state.crew.groupMission;
+    gm.progress = Math.min(gm.target, gm.progress + r.valid);
   }
   toast(`저장 완료! +${pts}P 획득`);
   if(r.myVideoUrl) URL.revokeObjectURL(r.myVideoUrl);

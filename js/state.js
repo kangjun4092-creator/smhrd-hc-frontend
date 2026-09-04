@@ -61,8 +61,9 @@ const state = {
         {who:'헬스왕', mine:false, text:'저 방금 완료했어요 💪', time:'09:20'},
       ],
     },
-    groupMission: {period:'daily', ex:'스쿼트', totalTarget:300},
-    teamProgress:64,
+    // 크루원이 각자 '운동' 탭에서 이 종목을 완료할 때마다 progress가 쌓이는 크루 공용 미션.
+    // 지금은 스쿼트만 있어 고정이지만, 나중에 종목이 늘어나면 매일 랜덤으로 ex를 바꿔주면 된다.
+    groupMission: {ex:'스쿼트', target:300, progress:120},
     level:1, exp:0,
     rankCity:null, rankGu:null, rankDong:null, mapCity:null, mapGu:null,
   },

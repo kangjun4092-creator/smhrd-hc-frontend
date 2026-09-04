@@ -1,9 +1,8 @@
 // crew.js — '홈크루' 카테고리: 생성/가입/공지/멤버관리/채팅/크루대전(5vs5).
 
-const CREW_MISSION_EX_OPTIONS = EXS.map(e=>e.name);
 // 팀장일 때만 '크루원관리' 탭이 추가로 붙는다 (가입요청 승인·강퇴는 팀장 전용 화면으로 분리).
 function getCrewPageTabs(){
-  const tabs=['크루 메인','크루채팅','크루공지','오늘의 단체 미션','크루원 정보'];
+  const tabs=['크루 메인','크루채팅','크루공지','크루원 정보'];
   if(getMyCrewRole()==='팀장') tabs.push('크루원관리');
   return tabs;
 }
@@ -62,13 +61,12 @@ function renderCrew(){
   const activeTab=tabs[i]||tabs[0];
   return `
   <div class="view-head"><h1>${state.crew.name} ${(state.crew.concepts||[]).map(c=>`<span class="pill pill-accent" style="vertical-align:middle;">#${c}</span>`).join(' ')}</h1></div>
-  <div class="subtabs">
+  <div class="subtabs subtabs-compact">
     ${tabs.map((t,idx)=>`<div class="tab ${i===idx?'active':''}" onclick="setSub('crew',${idx})">${t}</div>`).join('')}
   </div>
   ${activeTab==='크루 메인'?renderCrewOverview()
     :activeTab==='크루채팅'?renderCrewChat()
     :activeTab==='크루공지'?renderCrewNotice()
-    :activeTab==='오늘의 단체 미션'?renderCrewAssign()
     :activeTab==='크루원 정보'?renderCrewMembers()
     :renderCrewManage()}`;
 }
@@ -254,30 +252,13 @@ function toggleMyCrewRole(){
   state.subtabs.crew=0;
   render();
 }
-// 크루원 레벨 비율에 맞춰 전체 목표 횟수를 개인별 목표로 나눈다. (#9)
-function getCrewMissionTargets(){
-  const totalLevel = state.crew.members.reduce((s,m)=>s+m.level,0)||1;
-  const gm=state.crew.groupMission;
-  return state.crew.members.map(m=>({
-    ...m,
-    target: Math.max(5, Math.round(gm.totalTarget * (m.level/totalLevel))),
-  }));
-}
-// 실제로는 오늘 촬영한 운동 기록과 연동돼야 할 진행률이지만, 이 프로토타입에는 그 연결이
-// 없으므로 이름을 시드로 한 결정론적 값으로 흉내낸다.
-function getCrewMemberProgress(name, target){
-  const seed=hashStr(name+state.crew.groupMission.ex+state.crew.groupMission.period);
-  return Math.round(target * ((seed%70)+15)/100);
-}
 function renderCrewOverview(){
   const members=state.crew.members;
   const contribTotal=members.reduce((s,m)=>s+m.score,0)||1;
   const ranked=[...members].sort((a,b)=>b.score-a.score).map((m,i)=>({...m, rank:i+1, pct:Math.round(m.score/contribTotal*100)}));
   const dongRank=getMyDongCrewRank();
   const gm=state.crew.groupMission;
-  const targets=getCrewMissionTargets();
-  const mine=targets.find(m=>m.n==='나');
-  const myPct=mine?Math.min(100, Math.round(getCrewMemberProgress('나',mine.target)/mine.target*100)):0;
+  const gaugePct=Math.min(100, Math.round(gm.progress/gm.target*100));
   const expInLevel = (state.crew.exp||0) % CREW_EXP_PER_LEVEL;
   const party=state.crewParty;
   const partyStatus = !party.invites
@@ -310,11 +291,13 @@ function renderCrewOverview(){
     </div>
   </div>
   <div class="card" style="margin-top:14px;">
-    <p class="section-label">내게 배분된 미션</p>
-    <div class="flex-between"><h3 style="margin:0;">${mine?(mine.assignedEx||gm.ex):gm.ex}</h3><span class="pill pill-accent">${gm.period==='daily'?'일일':'주간'}</span></div>
-    <p class="desc" style="margin:8px 0;">목표 ${mine?mine.target:'-'}회</p>
-    <div class="progress" style="margin:6px 0;"><span style="width:${myPct}%"></span></div>
-    <p class="hint" style="margin:0;">진행률 ${myPct}% · 자세한 배분 현황은 '오늘의 단체 미션' 탭에서 확인하세요.</p>
+    <p class="section-label">오늘의 크루미션</p>
+    <div class="flex-between"><h3 style="margin:0;">개인운동에서 ${gm.ex} 하기</h3><span class="pill pill-accent">일일</span></div>
+    <p class="desc" style="margin:8px 0 10px;">크루원이 각자 '운동' 탭에서 ${gm.ex}를 완료하면 그 기록이 크루 종합 점수에 자동으로 더해져요.</p>
+    <div class="gauge">
+      <span class="fill" style="width:${gaugePct}%"></span>
+      <span class="gauge-label">${gm.progress.toLocaleString()} / ${gm.target.toLocaleString()}</span>
+    </div>
   </div>
   <div class="card" style="margin-top:14px;max-width:520px;">
     <div class="flex-between">
@@ -328,7 +311,8 @@ function renderCrewOverview(){
         <button class="btn btn-primary btn-sm" ${party.ready?'':'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="startCrewBattle()">대전 시작</button>
       </div>
     </div>
-  </div>`;
+  </div>
+  <p class="hint" style="margin-top:10px;">테스트용 — <button class="btn btn-sm btn-ghost" onclick="toggleMyCrewRole()">내 역할(${getMyCrewRole()}) 전환해보기</button></p>`;
 }
 
 /* ---------- 크루채팅 ----------
@@ -580,10 +564,11 @@ function startCrewBattle(){
     result:null, // null | 'win' | 'lose'
   };
   state.exercise={step:0, picked:'squat', camPhase:'idle', camStream:null, timerId:null, seconds:0, result:null, retakesUsed:0, liveReps:[], replayOpen:false};
+  exBattleCountdownStarted=false; // 새 대전마다 공용 카운트다운을 다시 탈 수 있게 초기화
   state.menu='crewBattle';
-  // 상대팀·팀원은 캘리브레이션 여부와 상관없이 바로 진행을 시작한다(이미 실시간으로 붙은
-  // 대전이라는 느낌 + 캘리브레이션이 없어 모달이 뜨더라도 뒤에서 계속 점수가 올라가야 함).
-  startBattleTicker();
+  // 상대팀·팀원 점수도 나와 똑같이 공용 카운트다운(startBattleReadyCountdown, exercise.js)이
+  // START가 되는 순간부터 오르기 시작한다 — 누구는 먼저 시작하고 누구는 늦게 시작하는 일이
+  // 없게, 모든 팀의 측정 시작 시점을 하나로 맞춘다.
 
   if(!state.user.calibration){
     toast('크루대전을 시작하려면 체형 캘리브레이션이 먼저 필요해요');
@@ -624,6 +609,10 @@ function updateBattleUI(bumpedKey, delta){
   setText('battle-team-total', teamTotal.toLocaleString());
   setText('battle-opp-total', b.oppScore.toLocaleString());
   const bar=document.getElementById('battle-progress'); if(bar) bar.style.width=Math.min(100,teamTotal/b.target*100)+'%';
+  // 웹캠 위에 떠 있는 실시간 스코어 오버레이도 같이 갱신한다.
+  setText('cam-battle-my', teamTotal.toLocaleString());
+  setText('cam-battle-opp', b.oppScore.toLocaleString());
+  const miniBar=document.getElementById('cam-battle-gauge'); if(miniBar) miniBar.style.width=Math.min(100,teamTotal/b.target*100)+'%';
   setText('battle-my-score', b.myScore);
   b.teammates.forEach((t,i)=> setText('battle-mate-score-'+i, t.score));
   if(bumpedKey) popBattleFx(bumpedKey, delta);
@@ -717,7 +706,17 @@ function renderCrewBattle(){
   </div>
 
   <div class="card" style="text-align:center;margin-bottom:16px;">
-    <h2 style="margin:0 0 4px;font-size:22px;">${state.crew.name} <span style="color:var(--ink-faint);font-weight:400;font-size:16px;">vs</span> ${b.opponent.name} <span class="pill pill-muted">Lv.${b.opponent.level}</span></h2>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0;">
+        <span class="pill pill-accent">Lv.${state.crew.level}</span>
+        <h2 style="margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${state.crew.name}</h2>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:var(--ink-faint);flex:none;">vs</span>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0;">
+        <span class="pill pill-muted">Lv.${b.opponent.level}</span>
+        <h2 style="margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${b.opponent.name}</h2>
+      </div>
+    </div>
     <p style="margin:0 0 18px;font-size:16px;font-weight:700;color:var(--gold);">스쿼트 ${b.target}점 먼저 채우기</p>
     <div style="display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;">
       <div>
@@ -753,20 +752,24 @@ function renderCrewBattle(){
   </div>` : `
   <div class="grid cal-grid">
     <div>
-      <div class="cam-stage" id="cam-stage" style="max-height:70vh;">
+      <div class="cam-stage" id="cam-stage">
         <div class="cam-placeholder" id="cam-placeholder">카메라를 확인하는 중...<br>브라우저의 카메라 권한을 허용해주세요.</div>
         <video id="cam-video" autoplay playsinline muted style="display:none;"></video>
         <canvas class="cam-overlay-canvas" id="cam-canvas"></canvas>
         <div class="cam-badge"><span class="rec-dot"></span><span id="cam-status">대기중</span></div>
         <div class="cam-timer mono" id="cam-timer">00:00</div>
-        <div id="cam-grade-flash" class="cam-grade-flash"></div>
-        <div id="cam-ready-overlay" class="cam-ready-overlay">
-          <div class="count" id="cam-ready-count"></div>
-          <div class="msg" id="cam-ready-msg">화면 속 스켈레톤에 맞춰 자리를 잡아주세요</div>
+        <div class="cam-battle-hud">
+          <div class="scores">
+            <span class="my mono" id="cam-battle-my">${teamTotal}</span>
+            <span class="sep">:</span>
+            <span class="opp mono" id="cam-battle-opp">${b.oppScore}</span>
+          </div>
+          <div class="mini-gauge"><span id="cam-battle-gauge" style="width:${Math.min(100,teamTotal/b.target*100)}%"></span></div>
         </div>
+        <div id="cam-grade-flash" class="cam-grade-flash"></div>
+        <div class="cam-battle-countdown" id="cam-battle-countdown"></div>
       </div>
       <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
-        <button class="btn btn-primary" id="cam-toggle" onclick="toggleRecording()">촬영 시작</button>
         <span class="hint" style="margin:0;position:relative;">내 기록 <b id="battle-my-score" class="mono">${b.myScore}</b>점 <span id="battle-pop-me" style="position:relative;display:inline-block;"></span></span>
       </div>
     </div>
@@ -815,62 +818,6 @@ function postCrewNotice(){
   if(!title || !body){ toast('제목과 내용을 입력해주세요'); return; }
   state.crew.notices.push({who:state.user.nickname||'팀장', title, body, date:'오늘'});
   toast('공지를 등록했습니다');
-  render();
-}
-/* ---------- 오늘의 단체 미션: 종목 1개 + 총목표를 레벨 비례로 개인 배분 ---------- */
-function renderCrewAssign(){
-  const isLeader=getMyCrewRole()==='팀장';
-  const gm=state.crew.groupMission;
-  const targets=getCrewMissionTargets();
-  return `
-  <div class="card" style="max-width:560px;margin-bottom:16px;">
-    <p class="section-label">${gm.period==='daily'?'크루 일일미션':'크루 주간미션'}</p>
-    <div class="filter-bar">
-      ${['daily','weekly'].map(p=>`<button class="btn btn-sm ${gm.period===p?'btn-primary':'btn-secondary'}" ${isLeader?`onclick="setCrewMissionPeriod('${p}')"`:'disabled style="opacity:.6;"'}>${p==='daily'?'일일':'주간'}</button>`).join('')}
-    </div>
-    <p class="desc">종목 <b style="color:var(--ink);">${gm.ex}</b> · 팀 전체 목표 <b style="color:var(--ink);">${gm.totalTarget}회</b> — 크루원 레벨에 맞춰 개인 목표가 자동으로 조정됩니다.</p>
-    ${isLeader?`
-    <div class="field"><label for="cm-ex-select">종목 선택</label><select id="cm-ex-select" onchange="setCrewMissionEx(this.value)">${CREW_MISSION_EX_OPTIONS.map(e=>`<option ${e===gm.ex?'selected':''}>${e}</option>`).join('')}</select></div>`:''}
-  </div>
-  <p class="section-label">배분 현황</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>팀원</th><th>역할</th><th>배분된 종목</th><th>진행률</th></tr></thead>
-      <tbody>
-        ${targets.map(m=>{
-          const done=getCrewMemberProgress(m.n, m.target);
-          const pct=Math.min(100, Math.round(done/m.target*100));
-          const ex=m.assignedEx||gm.ex;
-          return `
-          <tr>
-            <td>${m.n}${m.n==='나'?' <span class="pill pill-accent">나</span>':''}</td>
-            <td><span class="pill ${m.role==='팀장'?'pill-gold':'pill-muted'}">${m.role}</span></td>
-            <td>${isLeader
-              ? `<select onchange="setMemberMissionEx('${m.n}', this.value)" style="width:auto;padding:5px 8px;font-size:12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);">${CREW_MISSION_EX_OPTIONS.map(e=>`<option ${ex===e?'selected':''}>${e}</option>`).join('')}</select>`
-              : `<span class="pill pill-accent">${ex}</span>`}</td>
-            <td style="min-width:130px;">
-              <div class="bar-track"><span style="width:${pct}%;background:${pct>=100?'var(--accent)':'var(--gold)'}"></span></div>
-              <span class="hint" style="margin:3px 0 0;">${pct}%${pct>=100?' · 완료':''}</span>
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  </div>
-  <p class="hint" style="margin-top:10px;">테스트용 — <button class="btn btn-sm btn-ghost" onclick="toggleMyCrewRole()">내 역할(${getMyCrewRole()}) 전환해보기</button></p>`;
-}
-function setCrewMissionPeriod(p){
-  if(getMyCrewRole()!=='팀장'){ toast('미션 설정 권한이 없습니다'); return; }
-  state.crew.groupMission.period=p; render();
-}
-function setCrewMissionEx(v){
-  if(getMyCrewRole()!=='팀장'){ toast('미션 설정 권한이 없습니다'); return; }
-  state.crew.groupMission.ex=v; render();
-}
-function setMemberMissionEx(name, ex){
-  if(getMyCrewRole()!=='팀장'){ toast('배분 변경 권한이 없습니다'); return; }
-  const m=state.crew.members.find(m=>m.n===name);
-  if(m){ m.assignedEx=ex; toast(`${name}님의 배분 종목을 ${ex}(으)로 변경했습니다`); }
   render();
 }
 /* ---------- 크루원 정보: 조회 전용 (강퇴 기능은 크루원관리 탭으로 이동) ---------- */

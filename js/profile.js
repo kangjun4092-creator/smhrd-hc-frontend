@@ -9,7 +9,7 @@ function renderProfile(){
     renderSetAccount();
   return `
   <div class="view-head"><h1>마이페이지</h1></div>
-  <div class="subtabs">
+  <div class="subtabs subtabs-compact">
     ${PROFILE_TABS.map((t,idx)=>`<div class="tab ${i===idx?'active':''}" onclick="setSub('profile',${idx})">${t}</div>`).join('')}
   </div>
   ${renderGuestBlur(body, '로그인하면 내 캐릭터·미션·운동 기록·계정 정보를 확인할 수 있어요')}`;

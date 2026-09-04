@@ -6,82 +6,86 @@
    이 파일은 100% 프론트엔드입니다 — 서버/DB와 통신하지 않습니다.
    ============================================================================ */
 /* ----------------------------------------------------------------------
-   design: 종이 콜라주 워크숍 (참고: 손으로 오려붙인 페이퍼컷 일러스트)
-   원색 색종이 조각 + 두꺼운 검정 외곽선 + 크래프트지 배경이라는
-   일러스트의 문법을, 크림색 종이 배경 위 스티커 카드 UI로 옮겼다.
-   포인트 컬러는 일러스트 속 색 그대로: 네이비 / 골드 / 코랄 / 스카이블루.
+   design: 오운홈 · 플레이풀 모바일게임 테마 (참고: 로딩화면 스타일 캐릭터+덤벨 아트)
+   하늘색 배경 그라데이션 + 두꺼운 네이비 외곽선 + 골드/코랄 포인트라는 문법을
+   기존 "종이 콜라주" 스티커 카드 레이아웃 위에 그대로 재도색했다. 폰트는 한글이
+   지원되지 않는 Fredoka/Nunito 대신, 이미 같은 결의 둥글고 발랄한 느낌이면서
+   한글도 정상 렌더링되는 기존 Jua(디스플레이)/Pretendard(본문)를 유지한다.
    ---------------------------------------------------------------------- */
 :root{
-  --bg:#F5EFDD;
-  --surface:#FFFCF3;
-  --surface-2:#EDE2C4;
-  --ink:#1A1A1A;
-  --ink-dim:#5B5648;
-  --ink-faint:#9A9280;
-  --line:#DDD0AC;
-  --outline:#1A1A1A;
-  --accent:#1B3A6B;
+  --bg:#EAF6FD;
+  --surface:#FFFDF6;
+  --surface-2:#EEF3FB;
+  --ink:#132049;
+  --ink-dim:#5A6A8A;
+  --ink-faint:#93A1C2;
+  --line:#CDDAF0;
+  --outline:#132049;
+  --accent:#1C2B52;
   --accent-ink:#FFFFFF;
-  --accent-soft:#DCE4F2;
-  --coral:#E8532B;
-  --coral-soft:#FBDDD2;
-  --gold:#C98A00;
-  --gold-soft:#FBEACB;
-  --sky:#3E8FCF;
-  --sky-soft:#DBEEFB;
-  --danger:#B8241A;
-  --danger-soft:#F7DCD3;
-  --shadow: 0 2px 4px rgba(26,20,10,.06), 0 10px 22px -12px rgba(26,20,10,.22);
-  --radius: 18px;
+  --accent-soft:#DDE7FA;
+  --coral:#E0563A;
+  --coral-soft:#FFE1DA;
+  --gold:#D98C0A;
+  --gold-soft:#FDECC7;
+  --gold-ink:#132049;
+  --sky:#3F95D6;
+  --sky-soft:#DCF0FB;
+  --danger:#D94F3F;
+  --danger-soft:#FBDCD6;
+  --shadow: 0 5px 0 var(--outline);
+  --radius: 20px;
   --font-display:'Jua', 'Pretendard', 'Malgun Gothic', sans-serif;
   --font-body:'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
   --font-mono:'IBM Plex Mono', 'Pretendard', 'Malgun Gothic', monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#221C15;
-    --surface:#2E2519;
-    --surface-2:#3A2F1F;
-    --ink:#F3ECDD;
-    --ink-dim:#C9BBA0;
-    --ink-faint:#8F8268;
-    --line:#4A3D28;
-    --outline:#F3ECDD;
-    --accent:#7DA3DE;
-    --accent-ink:#0B1626;
-    --accent-soft:#22314A;
-    --coral:#FF8A5E;
-    --coral-soft:#4A2A1C;
-    --gold:#F0B93A;
-    --gold-soft:#40320F;
+    --bg:#0E1730;
+    --surface:#16213F;
+    --surface-2:#1C2B52;
+    --ink:#EAF1FF;
+    --ink-dim:#A9B7DD;
+    --ink-faint:#7684AB;
+    --line:#2C3C66;
+    --outline:#EAF1FF;
+    --accent:#6FBBEE;
+    --accent-ink:#0E1730;
+    --accent-soft:#1F3358;
+    --coral:#FF9478;
+    --coral-soft:#4A2A1F;
+    --gold:#FFC94D;
+    --gold-soft:#4A3814;
+    --gold-ink:#132049;
     --sky:#6FBBEE;
-    --sky-soft:#1C3345;
-    --danger:#E5645A;
-    --danger-soft:#3A1E1B;
-    --shadow: 0 2px 4px rgba(0,0,0,.4), 0 14px 30px -14px rgba(0,0,0,.65);
+    --sky-soft:#1C3A52;
+    --danger:#FF7A68;
+    --danger-soft:#4A231E;
+    --shadow: 0 5px 0 var(--outline);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#221C15;
-  --surface:#2E2519;
-  --surface-2:#3A2F1F;
-  --ink:#F3ECDD;
-  --ink-dim:#C9BBA0;
-  --ink-faint:#8F8268;
-  --line:#4A3D28;
-  --outline:#F3ECDD;
-  --accent:#7DA3DE;
-  --accent-ink:#0B1626;
-  --accent-soft:#22314A;
-  --coral:#FF8A5E;
-  --coral-soft:#4A2A1C;
-  --gold:#F0B93A;
-  --gold-soft:#40320F;
+  --bg:#0E1730;
+  --surface:#16213F;
+  --surface-2:#1C2B52;
+  --ink:#EAF1FF;
+  --ink-dim:#A9B7DD;
+  --ink-faint:#7684AB;
+  --line:#2C3C66;
+  --outline:#EAF1FF;
+  --accent:#6FBBEE;
+  --accent-ink:#0E1730;
+  --accent-soft:#1F3358;
+  --coral:#FF9478;
+  --coral-soft:#4A2A1F;
+  --gold:#FFC94D;
+  --gold-soft:#4A3814;
+  --gold-ink:#132049;
   --sky:#6FBBEE;
-  --sky-soft:#1C3345;
-  --danger:#E5645A;
-  --danger-soft:#3A1E1B;
-  --shadow: 0 2px 4px rgba(0,0,0,.4), 0 14px 30px -14px rgba(0,0,0,.65);
+  --sky-soft:#1C3A52;
+  --danger:#FF7A68;
+  --danger-soft:#4A231E;
+  --shadow: 0 5px 0 var(--outline);
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
@@ -186,7 +190,7 @@ button{font-family:inherit;}
   transition:transform .08s ease, box-shadow .08s ease, background .15s ease, opacity .15s ease;
 }
 .btn:active{transform:translate(2px,2px);box-shadow:none;}
-.btn-primary{background:var(--gold);color:#241A00;border-color:var(--outline);}
+.btn-primary{background:var(--gold);color:var(--gold-ink);border-color:var(--outline);}
 .btn-primary:hover{filter:brightness(1.08);}
 .btn-secondary{background:var(--surface-2);color:var(--ink);border-color:var(--outline);}
 .btn-secondary:hover{background:var(--line);}
@@ -207,7 +211,7 @@ button{font-family:inherit;}
 }
 .brand{display:flex;align-items:center;gap:9px;padding:0 8px 20px;color:inherit;text-decoration:none;cursor:pointer;}
 .brand-mark{width:40px;height:40px;border-radius:10px;background:var(--surface-2);border:2px solid var(--outline);flex:none;
-  display:flex;align-items:center;justify-content:center;color:#241A00;font-family:var(--font-display);font-size:16px;overflow:hidden;}
+  display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:var(--font-display);font-size:16px;overflow:hidden;}
 .brand-mark img{width:100%;height:100%;object-fit:cover;object-position:center 25%;}
 .brand-name{font-family:var(--font-display);font-size:16px;line-height:1.3;font-weight:400;}
 .brand-name small{display:block;font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint);font-weight:400;letter-spacing:.06em;margin-top:2px;}
@@ -253,7 +257,7 @@ button{font-family:inherit;}
   padding:8px 16px;border-radius:999px;font-size:13px;font-weight:700;color:var(--ink-faint);
   cursor:pointer;border:none;
 }
-.tab.active{color:#241A00;background:var(--gold);}
+.tab.active{color:var(--gold-ink);background:var(--gold);}
 
 /* cards & grids */
 .grid{display:grid;gap:14px;}
@@ -282,17 +286,30 @@ button{font-family:inherit;}
 .progress{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;}
 .progress > span{display:block;height:100%;background:var(--accent);border-radius:99px;}
 
+/* 누적/목표 수치를 게이지 안쪽에 직접 표기할 때 쓰는 두꺼운 진행바 (예: 크루 단체미션).
+   글자색은 mix-blend-mode로 채워진 부분/안 채워진 부분 어디에 걸치든 알아서 대비되게 한다. */
+.gauge{position:relative;height:30px;border-radius:99px;background:var(--surface-2);border:2px solid var(--outline);overflow:hidden;}
+.gauge .fill{display:block;height:100%;background:var(--accent);border-radius:99px;}
+.gauge .gauge-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-weight:700;font-size:12.5px;color:#fff;mix-blend-mode:difference;pointer-events:none;}
+
 .steplist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
 .steplist li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-dim);}
 .steplist .num{width:20px;height:20px;border-radius:50%;background:var(--surface-2);color:var(--ink);font-family:var(--font-mono);
   font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;}
 
 .cam-stage{
-  position:relative;border-radius:20px;overflow:hidden;background:#0B0D0F;aspect-ratio:16/10;
+  position:relative;border-radius:20px;overflow:hidden;background:#101C38;aspect-ratio:16/10;
   display:flex;align-items:center;justify-content:center;border:2.5px solid var(--outline);
   box-shadow:4px 5px 0 var(--outline);
 }
 .cam-stage video{width:100%;height:100%;object-fit:cover;display:block;}
+/* 데스크톱 전용 높이 상한 — 예전엔 이 값을 인라인 style로 줬는데, 인라인은 무엇보다
+   우선 적용돼서 모바일에서 aspect-ratio가 이 상한에 눌리며 폭까지 같이 줄어들고 왼쪽으로
+   쏠려 보이는 문제가 있었다. 미디어쿼리로 옮겨서 모바일에는 아예 적용되지 않게 한다. */
+@media (min-width:861px){
+  #cam-stage{max-height:80vh;}
+}
 .cam-overlay-canvas{position:absolute;inset:0;width:100%;height:100%;}
 .cam-badge{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.14);backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11px;
@@ -302,6 +319,24 @@ button{font-family:inherit;}
   -webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);color:#fff;
   padding:7px 14px;border-radius:999px;font-family:var(--font-mono);font-size:14px;z-index:3;}
 .cam-placeholder{color:#9AA0A6;font-size:12.5px;text-align:center;padding:20px;line-height:1.6;font-family:var(--font-mono);}
+/* 실시간 인식 상태 — 배경 없이 웹캠 화면 위에 숫자만 떠서 계속 카운트된다 */
+.cam-live-stats{position:absolute;top:12px;right:12px;z-index:3;display:flex;gap:14px;pointer-events:none;}
+.cam-live-stats .stat{text-align:center;}
+.cam-live-stats .num{display:block;font-family:var(--font-display);font-size:17px;font-weight:700;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,.75);}
+.cam-live-stats .lbl{display:block;font-size:8.5px;font-weight:800;color:#fff;letter-spacing:.02em;margin-top:3px;text-shadow:0 1px 4px rgba(0,0,0,.75);}
+/* 크루대전 실시간 스코어 — 배경 없이 웹캠 상단 중앙에 작게 떠서 사람을 가리지 않는다 */
+.cam-battle-hud{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none;}
+.cam-battle-hud .scores{display:flex;align-items:center;gap:7px;font-family:var(--font-display);font-size:19px;font-weight:700;}
+.cam-battle-hud .my{color:#6FBBEE;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+.cam-battle-hud .opp{color:#FF9478;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+.cam-battle-hud .sep{color:#fff;font-size:13px;opacity:.7;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+.cam-battle-hud .mini-gauge{width:96px;height:5px;border-radius:99px;background:rgba(255,255,255,.28);overflow:hidden;}
+.cam-battle-hud .mini-gauge span{display:block;height:100%;background:#6FBBEE;border-radius:99px;}
+/* 크루대전 공용 대기 카운트다운(10→START) — 다 같이 보는 시계라 우측 상단에 크게, 배경 없이 */
+.cam-battle-countdown{position:absolute;top:10px;right:12px;z-index:4;
+  font-family:var(--font-display);font-size:34px;font-weight:700;color:#fff;line-height:1;
+  text-shadow:0 2px 6px rgba(0,0,0,.85);pointer-events:none;}
 .cam-grade-flash{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);
   font-family:var(--font-display);font-size:42px;font-weight:700;letter-spacing:.04em;
@@ -312,12 +347,18 @@ button{font-family:inherit;}
 .cam-ready-overlay{
   position:absolute;left:50%;top:16px;transform:translateX(-50%);
   display:none;flex-direction:column;align-items:center;gap:4px;
-  background:rgba(11,13,15,.72);border:1px solid rgba(255,255,255,.25);border-radius:16px;
-  padding:12px 22px;z-index:5;text-align:center;pointer-events:none;
+  z-index:5;text-align:center;pointer-events:none;
 }
 .cam-ready-overlay.show{display:flex;}
-.cam-ready-overlay .count{font-family:var(--font-display);font-size:34px;font-weight:700;color:#fff;line-height:1;}
-.cam-ready-overlay .msg{font-size:11.5px;color:#fff;font-family:var(--font-mono);max-width:240px;line-height:1.45;}
+/* 정렬 유지 + 카운트다운을 하나로 잇는 원형 게이지. 웹캠 화면 위에 바로 떠 있어서
+   모바일에서도 화면을 내리지 않고 진행 상황이 바로 보인다. */
+.cam-ready-overlay .ready-ring{position:relative;width:84px;height:84px;display:flex;align-items:center;justify-content:center;}
+.cam-ready-overlay .ready-ring svg{position:absolute;inset:0;transform:rotate(-90deg);filter:drop-shadow(0 1px 4px rgba(0,0,0,.6));}
+.cam-ready-overlay .ready-ring .ring-track{fill:none;stroke:rgba(255,255,255,.22);stroke-width:6;}
+.cam-ready-overlay .ready-ring .ring-fill{fill:none;stroke:var(--gold);stroke-width:6;stroke-linecap:round;
+  stroke-dasharray:226;stroke-dashoffset:226;transition:stroke-dashoffset .18s linear;}
+.cam-ready-overlay .count{font-family:var(--font-display);font-size:26px;font-weight:700;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,.7);}
+.cam-ready-overlay .msg{font-size:11.5px;color:#fff;font-family:var(--font-mono);max-width:240px;line-height:1.45;text-shadow:0 1px 4px rgba(0,0,0,.7);}
 
 .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:18px 0;}
 .stat-box{background:var(--surface-2);border:2px solid var(--outline);border-radius:12px;padding:14px;text-align:center;}
@@ -420,7 +461,7 @@ tr:last-child td{border-bottom:none;}
     var(--surface-2);
   min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;
 }
-.map-badge{width:52px;height:52px;border-radius:50%;background:var(--gold);color:#2b1c02;border:2px solid var(--outline);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px;}
+.map-badge{width:52px;height:52px;border-radius:50%;background:var(--gold);color:var(--gold-ink);border:2px solid var(--outline);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:20px;}
 
 /* ---------- 5vs5 크루대전: 팀원 캐릭터가 자동으로 스쿼트하는 것처럼 보이는 반복 애니메이션과,
    개수가 오를 때마다 뜨는 "+1" 팝업 ---------- */
@@ -460,6 +501,14 @@ tr:last-child td{border-bottom:none;}
   .cta-row{flex-wrap:wrap;}
   .cal-grid{grid-template-columns:1fr;}
   .cal-grid .cam-stage{max-height:none;aspect-ratio:3/4;}
+  /* 무릎 각도까지 잘 잡히려면 발끝까지 프레임에 들어와야 해서 웹캠 화면을 세로로 더 키운다.
+     "촬영 시작"을 누른 뒤(cam-grown)에는 버튼·안내를 더 볼 일이 없으니 한 번 더 키운다. */
+  #cam-stage{aspect-ratio:3/4;}
+  #cam-stage.cam-grown{aspect-ratio:2/3;}
+  /* 운동 스텝 탭(1.종목선택~4.결과저장)이 좁은 화면에서 두 줄로 밀리지 않게 한 줄로 압축하고,
+     그래도 안 맞으면 가로 스크롤되게 한다 — 카메라가 커진 만큼 위쪽 공간을 아껴야 한다. */
+  .subtabs-compact{flex-wrap:nowrap;overflow-x:auto;gap:1px;margin-bottom:14px;}
+  .subtabs-compact .tab{padding:7px 9px;font-size:10.5px;white-space:nowrap;flex:none;}
   .confirm-box{max-height:92vh;overflow-y:auto;}
 }
 /* 폰 화면(대략 세로 모드 스마트폰 폭) — 카드 그리드·통계 박스가 최소폭 때문에 잘리지 않도록

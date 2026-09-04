@@ -1,5 +1,5 @@
 /* ============================================================================
-   style.css — 우리동네홈트챌린지 (프론트엔드 전용 파일)
+   style.css — 오운홈 (프론트엔드 전용 파일)
    ----------------------------------------------------------------------------
    [기술스택] 순수 CSS3 (프레임워크/전처리기 없음). 팀에서 컴포넌트 단위 관리가
    필요해지면 이 시점에 SCSS 또는 CSS Modules 도입을 검토하면 됩니다.
@@ -206,8 +206,9 @@ button{font-family:inherit;}
   padding:22px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;
 }
 .brand{display:flex;align-items:center;gap:9px;padding:0 8px 20px;color:inherit;text-decoration:none;cursor:pointer;}
-.brand-mark{width:34px;height:34px;border-radius:10px;background:var(--gold);border:2px solid var(--outline);flex:none;
-  display:flex;align-items:center;justify-content:center;color:#241A00;font-family:var(--font-display);font-size:16px;}
+.brand-mark{width:40px;height:40px;border-radius:10px;background:var(--surface-2);border:2px solid var(--outline);flex:none;
+  display:flex;align-items:center;justify-content:center;color:#241A00;font-family:var(--font-display);font-size:16px;overflow:hidden;}
+.brand-mark img{width:100%;height:100%;object-fit:cover;object-position:center 25%;}
 .brand-name{font-family:var(--font-display);font-size:16px;line-height:1.3;font-weight:400;}
 .brand-name small{display:block;font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint);font-weight:400;letter-spacing:.06em;margin-top:2px;}
 

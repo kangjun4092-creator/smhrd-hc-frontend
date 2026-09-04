@@ -16,7 +16,7 @@ function renderMissionShop(){
   <div class="subtabs">
     ${SHOP_CATEGORIES.map(c=>`<div class="tab ${f===c?'active':''}" onclick="setShopFilter('${c}')">${c}</div>`).join('')}
   </div>
-  <div class="grid grid-3">
+  <div class="grid grid-3" style="max-width:640px;">
     ${items.map(({it,idx})=>`
       <div class="card">
         <div class="feed-media" style="height:88px;">${it.name}</div>

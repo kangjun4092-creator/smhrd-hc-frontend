@@ -4,7 +4,7 @@ function renderSignup(){
   return `
   <div class="center-shell">
     <div class="auth-card">
-      <p class="auth-eyebrow">우리동네 홈트챌린지</p>
+      <p class="auth-eyebrow">오운홈</p>
       <h1 class="auth-title">회원가입</h1>
       <p class="auth-sub">AI 자세 분석과 지역 랭킹으로 함께하는 홈트레이닝</p>
 
@@ -150,7 +150,7 @@ function renderLogin(){
   return `
   <div class="center-shell">
     <div class="auth-card">
-      <p class="auth-eyebrow">우리동네홈트챌린지</p>
+      <p class="auth-eyebrow">오운홈</p>
       <h1 class="auth-title">로그인</h1>
       <p class="auth-sub">${state.user.nickname ? state.user.nickname+'님, 다시 오신 것을 환영해요' : '계정 정보를 입력해 주세요'}</p>
       <div class="field">

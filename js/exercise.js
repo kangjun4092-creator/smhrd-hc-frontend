@@ -78,7 +78,7 @@ function renderExStepPick(){
     <p class="desc mono" style="margin:0;">${used} / ${limit}세트 사용 · ${remain>0?`<b style="color:var(--accent);">${remain}세트 남음</b>`:'<b style="color:var(--danger);">모두 사용함</b>'}</p>
     ${noSetsLeft ? `<p class="hint" style="margin-top:6px;">포인트 상점에서 '세트 추가권'을 구매하면 오늘 바로 더 운동할 수 있어요.</p>` : `<p class="hint" style="margin-top:6px;">레벨업(5레벨마다 +1) 또는 '세트 추가권' 구매로 한도를 늘릴 수 있어요.</p>`}
   </div>
-  <div class="grid grid-3">
+  <div class="grid grid-3" style="max-width:420px;">
     ${EXS.map(e=>`
       <div class="card exercise-card ${state.exercise.picked===e.id?'selected':''}" onclick="pickExercise('${e.id}')">
         <div class="ex-badge">${EX_ICONS[e.id]||e.name.charAt(0)}</div>

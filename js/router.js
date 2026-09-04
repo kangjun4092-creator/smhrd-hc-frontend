@@ -76,8 +76,8 @@ function renderApp(){
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand" onclick="goHome()" style="cursor:pointer;" title="메인으로 이동">
-        <div class="brand-mark">홈</div>
-        <div class="brand-name">우리동네<br>홈트챌린지<small>HOME TRAINING</small></div>
+        <div class="brand-mark"><img src="assets/logo.png" alt="오운홈"></div>
+        <div class="brand-name">오운홈<small>O - Un - Home</small></div>
       </div>
       ${MENUS.map(m=>`
         <div class="navitem ${state.menu===m.id?'active':''}" onclick="setMenu('${m.id}')">

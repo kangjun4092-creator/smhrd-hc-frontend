@@ -52,7 +52,7 @@ function renderGuestBlur(innerHtml, message){
   return `
   <div style="position:relative;">
     <div style="filter:blur(6px);opacity:.5;pointer-events:none;user-select:none;" aria-hidden="true">${innerHtml}</div>
-    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;text-align:center;padding:48px 24px 24px;">
       <div style="font-size:32px;">🔒</div>
       <p style="font-weight:700;font-size:15px;color:var(--ink);margin:0;max-width:32ch;">${message}</p>
       <button class="btn btn-primary" onclick="goto('login')">로그인하고 확인하기</button>

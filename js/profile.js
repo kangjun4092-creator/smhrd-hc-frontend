@@ -151,6 +151,11 @@ function getEquipState(){
 function toggleEquip(idx){
   const it=state.shopItems[idx];
   if(!it.owned){ toast('포인트 상점에서 구매해주세요'); return; }
+  // 같은 슬롯(예: 배경)에 아이템이 여러 개 생길 수 있어, 새로 착용할 때는 같은 슬롯의
+  // 나머지 아이템을 먼저 해제해서 한 슬롯에 하나만 착용되도록 한다.
+  if(!it.equipped && it.slot){
+    state.shopItems.forEach(o=>{ if(o!==it && o.slot===it.slot) o.equipped=false; });
+  }
   it.equipped=!it.equipped;
   toast(it.equipped?`${it.name} 착용했습니다`:`${it.name} 착용 해제했습니다`);
   render();

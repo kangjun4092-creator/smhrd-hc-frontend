@@ -36,6 +36,8 @@ const state = {
     {name:'금빛 뱃지 프레임', price:450, owned:false, equipped:false, slot:'badge', category:'의상', levelReq:6, effect:'미션 포인트 +10%', effectDesc:'모든 미션 달성 보상 포인트에 10% 추가 지급됩니다.'},
     {name:'챔피언 왕관', price:900, owned:false, equipped:false, slot:'crown', category:'의상', levelReq:10, effect:'랭킹 점수 +5%', effectDesc:'지역·종목 랭킹에 반영되는 점수가 5% 가산됩니다.'},
     {name:'프로필 배경 - 새벽 러닝', price:250, owned:true, equipped:true, slot:'background', category:'배경', levelReq:3, effect:'출석 보너스 +5P/일', effectDesc:'연속 출석일마다 기본 출석 포인트에 5P가 추가됩니다.'},
+    {name:'프로필 배경 - 노을 진 공원', price:300, owned:false, equipped:false, slot:'background', category:'배경', levelReq:4, effect:'미션 포인트 +5%', effectDesc:'일간 미션 달성 보상 포인트에 5%가 추가됩니다.'},
+    {name:'프로필 배경 - 도심 야경', price:400, owned:false, equipped:false, slot:'background', category:'배경', levelReq:7, effect:'랭킹 점수 +3%', effectDesc:'지역·종목 랭킹에 반영되는 점수가 3% 가산됩니다.'},
     {name:'캐릭터 - 로봇 코치', price:600, owned:false, equipped:false, slot:'skin', category:'의상', levelReq:8, effect:'준비 카운트다운 -1초', effectDesc:'촬영 시작 전 정렬 확인 후 나오는 카운트다운이 1초 짧아집니다.'},
     {name:'닉네임 컬러 이펙트', price:180, owned:true, equipped:true, slot:'nickname', category:'기타', levelReq:2, effect:'능력치 없음 · 외형 전용', effectDesc:'랭킹에서 닉네임 색상만 강조되며 점수에는 영향이 없습니다.'},
     {name:'닉네임 변경권', price:150, owned:false, consumable:true, category:'기타', levelReq:1, effect:'닉네임 변경 1회', effectDesc:'설정에서 닉네임을 한 번 변경할 수 있습니다. 무분별한 닉네임 변경으로 랭킹 혼선이 생기는 것을 막기 위한 아이템이에요.'},

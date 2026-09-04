@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- ============================================================================
+     index.html — 우리동네홈트챌린지 (프론트엔드)
+     ----------------------------------------------------------------------------
+     smhrd-hc-prototype의 script.js(단일 파일)를 구간(도메인)별로 나눠 옮긴 실제
+     구현용 프론트엔드입니다. 모듈(import/export)이 아니라 예전과 동일하게 전역
+     스코프를 공유하는 일반 <script> 태그 여러 개로 나눴습니다 — 그래서 HTML의
+     onclick="함수명()" 인라인 핸들러가 그대로 동작하고, 로드 순서만 지키면 됩니다.
+
+     [로드 순서 규칙]
+       data.js → state.js 만 순서가 중요합니다(state.js가 data.js의
+       generateSquatMissions()를 즉시 호출해서 데이터를 만들기 때문). 그 외
+       파일들은 전부 함수 선언이라 서로 어떤 순서로 있어도 상관없고, bootstrap.js
+       (render() 최초 호출)만 반드시 마지막에 와야 합니다.
+
+     [기술스택]
+       프론트엔드: HTML5 + CSS3 + JavaScript(ES6+, 바닐라, 프레임워크 없음)
+       자세 인식: MediaPipe Pose (Tasks Vision, WASM) — 전부 브라우저에서 실행,
+                  서버로 영상이 전송되지 않음(js/calibration.js, js/exercise.js)
+       백엔드/DB 연동은 아직 이 파일들 안에 없습니다 — 별도 프로젝트인
+       smhrd-hc-backend(Java/Spring Boot/MySQL)의 API를 fetch()로 붙이는 작업이
+       다음 단계입니다. 자세한 배경은 README.md 참고.
+     ============================================================================ -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리동네홈트챌린지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 화면 전체가 router.js의 render()에서 이 두 컨테이너 안으로 그려집니다 (SPA 구조). -->
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<!-- 데이터 → 상태 순서만 지키면 됩니다. 나머지는 순서 무관, bootstrap.js는 항상 마지막. -->
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/router.js"></script>
+<script src="js/landing.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/calibration.js"></script>
+<script src="js/main.js"></script>
+<script src="js/exercise.js"></script>
+<script src="js/mission.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/crew.js"></script>
+<script src="js/ranking.js"></script>
+<script src="js/support.js"></script>
+<script src="js/bootstrap.js"></script>
+</body>
+</html>

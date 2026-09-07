@@ -49,6 +49,23 @@ function calRetake(){
 }
 // [백엔드 연동 필요 구간] calApply() 지점: 계산된 관절 좌표·체형 프로필(JSON)을 실제로 남기려면
 //   calApply() 호출(여기) > Java 서버 캘리브레이션 저장 API > DB 연결 > SQL INSERT(캘리브레이션 테이블, 또는 JSON 컬럼)
+async function saveCalibrationToServer(){
+  if(!state.token || !state.signup.calProfile) return;
+  try{
+    await fetch(`${API_BASE}/api/users/me/calibration`, {
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer ' + state.token,
+      },
+      body: JSON.stringify({ profileJson: JSON.stringify(state.signup.calProfile) })
+    });
+  }catch(err){
+    console.error('캘리브레이션 저장 실패', err);
+  }
+}
+
+
 function calApply(){
   state.signup.calibrated = true;
   state.signup.calModalOpen = false;
@@ -57,6 +74,7 @@ function calApply(){
   // 여기서 바로 보정값을 반영해서, 곧장 튜토리얼로 넘어가게 한다.
   if(state.screen==='app'){
     state.user.calibration = state.signup.calProfile;
+    saveCalibrationToServer();
     if(state.menu==='exercise' && state.exercise.step===0 && state.exercise.picked){
       goExStep(1);
       return;

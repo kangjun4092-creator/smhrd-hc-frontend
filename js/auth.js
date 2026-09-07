@@ -1,6 +1,6 @@
 // auth.js — 회원가입/로그인/소셜로그인/아이디·비밀번호 찾기 화면과 로직.
 
-function renderSignup(){
+function renderSignup() {
   return `
   <div class="center-shell">
     <div class="auth-card">
@@ -11,7 +11,7 @@ function renderSignup(){
       <div class="field">
         <label for="su-id">아이디</label>
         <div class="field-row">
-          <input id="su-id" type="text" placeholder="영문/숫자 4자 이상" style="flex:1;min-width:0;" value="${state.signup.id||''}" oninput="state.signup.id=this.value">
+          <input id="su-id" type="text" placeholder="영문/숫자 4자 이상" style="flex:1;min-width:0;" value="${state.signup.id || ''}" oninput="state.signup.id=this.value">
           <button type="button" class="btn btn-secondary btn-sm" style="flex:none;white-space:nowrap;" onclick="checkSignupIdDup()">중복확인</button>
         </div>
         <p class="hint" id="su-id-msg" style="display:none;"></p>
@@ -19,18 +19,18 @@ function renderSignup(){
       <div class="field-row">
         <div class="field">
           <label for="su-pw">비밀번호</label>
-          <input id="su-pw" type="password" placeholder="••••••••" value="${state.signup.pw||''}" oninput="state.signup.pw=this.value;checkSignupPwMatch();">
+          <input id="su-pw" type="password" placeholder="••••••••" value="${state.signup.pw || ''}" oninput="state.signup.pw=this.value;checkSignupPwMatch();">
         </div>
         <div class="field">
           <label for="su-pw2">비밀번호 확인</label>
-          <input id="su-pw2" type="password" placeholder="••••••••" value="${state.signup.pw2||''}" oninput="state.signup.pw2=this.value;checkSignupPwMatch();">
+          <input id="su-pw2" type="password" placeholder="••••••••" value="${state.signup.pw2 || ''}" oninput="state.signup.pw2=this.value;checkSignupPwMatch();">
           <p class="hint" id="su-pw2-msg" style="display:none;color:var(--danger);">비밀번호가 일치하지 않습니다</p>
         </div>
       </div>
       <div class="field">
         <label for="su-nick">닉네임</label>
         <div class="field-row">
-          <input id="su-nick" type="text" placeholder="홈트에서 사용할 닉네임" style="flex:1;min-width:0;" value="${state.signup.nickname||''}" oninput="state.signup.nickname=this.value">
+          <input id="su-nick" type="text" placeholder="홈트에서 사용할 닉네임" style="flex:1;min-width:0;" value="${state.signup.nickname || ''}" oninput="state.signup.nickname=this.value">
           <button type="button" class="btn btn-secondary btn-sm" style="flex:none;white-space:nowrap;" onclick="checkSignupNickDup()">중복확인</button>
         </div>
         <p class="hint" id="su-nick-msg" style="display:none;"></p>
@@ -41,20 +41,25 @@ function renderSignup(){
         <p class="hint">가입자와 추천인 모두에게 포인트가 지급됩니다.</p>
       </div>
       <div class="field">
-        <label for="su-email">이메일</label>
-        <input id="su-email" type="email" placeholder="example@email.com" value="${state.signup.email||''}" oninput="state.signup.email=this.value">
+      <label for="su-email">이메일</label>
+      <div class="field-row">
+        <input id="su-email" type="email" placeholder="example@email.com" style="flex:1;min-width:0;" value="${state.signup.email || ''}" oninput="state.signup.email=this.value">
+        <button type="button" class="btn btn-secondary btn-sm" style="flex:none;white-space:nowrap;" onclick="checkSignupEmailDup()">중복확인</button>
       </div>
+      <p class="hint" id="su-email-msg" style="display:none;"></p>
+       </div>
+
       <div class="field">
         <label>활동 지역 (랭킹 산정 기준)</label>
         <div class="field-row">
           <select onchange="setSignupCity(this.value)" style="flex:1;min-width:0;">
-            ${Object.keys(REGION_DATA).map(c=>`<option ${c===state.signup.regionCity?'selected':''}>${c}</option>`).join('')}
+            ${Object.keys(REGION_DATA).map(c => `<option ${c === state.signup.regionCity ? 'selected' : ''}>${c}</option>`).join('')}
           </select>
           <select onchange="setSignupGu(this.value)" style="flex:1;min-width:0;">
-            ${Object.keys(REGION_DATA[state.signup.regionCity]).map(g=>`<option ${g===state.signup.regionGu?'selected':''}>${g}</option>`).join('')}
+            ${Object.keys(REGION_DATA[state.signup.regionCity]).map(g => `<option ${g === state.signup.regionGu ? 'selected' : ''}>${g}</option>`).join('')}
           </select>
           <select onchange="setSignupDong(this.value)" style="flex:1;min-width:0;">
-            ${REGION_DATA[state.signup.regionCity][state.signup.regionGu].map(d=>`<option ${d===state.signup.regionDong?'selected':''}>${d}</option>`).join('')}
+            ${REGION_DATA[state.signup.regionCity][state.signup.regionGu].map(d => `<option ${d === state.signup.regionDong ? 'selected' : ''}>${d}</option>`).join('')}
           </select>
         </div>
         <p class="hint">랭킹은 동 단위로 집계됩니다.</p>
@@ -74,85 +79,146 @@ function renderSignup(){
     </div>
   </div>`;
 }
-function setSignupCity(v){
-  state.signup.regionCity=v;
-  const gus=Object.keys(REGION_DATA[v]);
-  state.signup.regionGu=gus[0];
-  state.signup.regionDong=REGION_DATA[v][gus[0]][0];
+function setSignupCity(v) {
+  state.signup.regionCity = v;
+  const gus = Object.keys(REGION_DATA[v]);
+  state.signup.regionGu = gus[0];
+  state.signup.regionDong = REGION_DATA[v][gus[0]][0];
   render();
 }
-function setSignupGu(v){
-  state.signup.regionGu=v;
-  state.signup.regionDong=REGION_DATA[state.signup.regionCity][v][0];
+function setSignupGu(v) {
+  state.signup.regionGu = v;
+  state.signup.regionDong = REGION_DATA[state.signup.regionCity][v][0];
   render();
 }
-function setSignupDong(v){ state.signup.regionDong=v; render(); }
+function setSignupDong(v) { state.signup.regionDong = v; render(); }
 // (#8) 아이디·닉네임 중복확인 버튼 — 실제로는 SQL SELECT ... WHERE id=? / nickname=? 로 대체된다.
-function checkSignupIdDup(){
-  const id=document.getElementById('su-id').value.trim();
-  const msg=document.getElementById('su-id-msg');
-  if(!id){ msg.style.color='var(--danger)'; msg.textContent='아이디를 입력해주세요'; msg.style.display='block'; return; }
-  const dup=EXISTING_USERS.some(u=>u.id===id);
-  msg.style.color = dup ? 'var(--danger)' : 'var(--accent)';
-  msg.textContent = dup ? '이미 사용중인 아이디입니다' : '사용 가능한 아이디입니다';
-  msg.style.display='block';
+async function checkSignupIdDup() {
+  const id = document.getElementById('su-id').value.trim();
+  const msg = document.getElementById('su-id-msg');
+  if (!id) { msg.style.color = 'var(--danger)'; msg.textContent = '아이디를 입력해주세요'; msg.style.display = 'block'; return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/check-id`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ loginId: id })
+    });
+    const body = await res.json();
+    const dup = body.data.duplicate;
+    msg.style.color = dup ? 'var(--danger)' : 'var(--accent)';
+    msg.textContent = dup ? '이미 사용중인 아이디입니다' : '사용 가능한 아이디입니다';
+    msg.style.display = 'block';
+  } catch (err) {
+    msg.style.color = 'var(--danger)'; msg.textContent = '서버에 연결할 수 없습니다'; msg.style.display = 'block';
+  }
 }
-function checkSignupNickDup(){
-  const nick=document.getElementById('su-nick').value.trim();
-  const msg=document.getElementById('su-nick-msg');
-  if(!nick){ msg.style.color='var(--danger)'; msg.textContent='닉네임을 입력해주세요'; msg.style.display='block'; return; }
-  const dup=EXISTING_USERS.some(u=>u.nickname===nick);
-  msg.style.color = dup ? 'var(--danger)' : 'var(--accent)';
-  msg.textContent = dup ? '이미 사용중인 닉네임입니다' : '사용 가능한 닉네임입니다';
-  msg.style.display='block';
+
+async function checkSignupNickDup() {
+  const nick = document.getElementById('su-nick').value.trim();
+  const msg = document.getElementById('su-nick-msg');
+  if (!nick) { msg.style.color = 'var(--danger)'; msg.textContent = '닉네임을 입력해주세요'; msg.style.display = 'block'; return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/check-nickname`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname: nick })
+    });
+    const body = await res.json();
+    const dup = body.data.duplicate;
+    msg.style.color = dup ? 'var(--danger)' : 'var(--accent)';
+    msg.textContent = dup ? '이미 사용중인 닉네임입니다' : '사용 가능한 닉네임입니다';
+    msg.style.display = 'block';
+  } catch (err) {
+    msg.style.color = 'var(--danger)'; msg.textContent = '서버에 연결할 수 없습니다'; msg.style.display = 'block';
+  }
 }
-function checkSignupPwMatch(){
-  const pw=document.getElementById('su-pw').value;
-  const pw2=document.getElementById('su-pw2').value;
-  const msg=document.getElementById('su-pw2-msg');
-  msg.style.display = (pw2 && pw!==pw2) ? 'block' : 'none';
+
+async function checkSignupEmailDup() {
+  const email = document.getElementById('su-email').value.trim();
+  const msg = document.getElementById('su-email-msg');
+  if (!email) { msg.style.color = 'var(--danger)'; msg.textContent = '이메일을 입력해주세요'; msg.style.display = 'block'; return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/check-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const body = await res.json();
+    const dup = body.data.duplicate;
+    msg.style.color = dup ? 'var(--danger)' : 'var(--accent)';
+    msg.textContent = dup ? '이미 사용중인 이메일입니다' : '사용 가능한 이메일입니다';
+    msg.style.display = 'block';
+  } catch (err) {
+    msg.style.color = 'var(--danger)'; msg.textContent = '서버에 연결할 수 없습니다'; msg.style.display = 'block';
+  }
+}
+
+
+function checkSignupPwMatch() {
+  const pw = document.getElementById('su-pw').value;
+  const pw2 = document.getElementById('su-pw2').value;
+  const msg = document.getElementById('su-pw2-msg');
+  msg.style.display = (pw2 && pw !== pw2) ? 'block' : 'none';
 }
 // [백엔드 연동 필요 구간] 여기 doSignup()부터: 지금은 state.user에 값만 옮겨 담는
 // 목업이지만, 실제 구현에서는 이 지점에서 아래 파이프라인이 필요합니다.
 //   회원가입 폼 제출(여기) > Java 서버 회원가입 API(비밀번호 해싱 포함) > DB 연결 > SQL INSERT(계정 테이블)
-function doSignup(){
-  const id=document.getElementById('su-id').value.trim();
-  const pw=document.getElementById('su-pw').value;
-  const pw2=document.getElementById('su-pw2').value;
-  const nick=document.getElementById('su-nick').value.trim() || '홈트초보';
-  const email=document.getElementById('su-email').value.trim();
-  // (#8) 아이디·닉네임 중복 확인 — 실제로는 SQL SELECT ... WHERE id=? / nickname=? 로 대체된다.
-  if(!id){ toast('아이디를 입력해주세요'); return; }
-  if(pw!==pw2){ toast('비밀번호가 일치하지 않습니다'); return; }
-  if(EXISTING_USERS.some(u=>u.id===id)){ toast('이미 사용중인 아이디입니다'); return; }
-  if(EXISTING_USERS.some(u=>u.nickname===nick)){ toast('이미 사용중인 닉네임입니다'); return; }
-  const region=`${state.signup.regionCity} ${state.signup.regionGu} ${state.signup.regionDong}`;
-  state.user.nickname = nick;
-  state.user.email = email;
-  state.user.gender = state.signup.gender || 'male';
-  state.user.region = region;
-  state.user.calibration = state.signup.calProfile || null;
-  state.settings.account.nickname = state.user.nickname;
-  state.settings.account.regionCity = state.signup.regionCity;
-  state.settings.account.regionGu = state.signup.regionGu;
-  state.settings.account.regionDong = state.signup.regionDong;
-  EXISTING_USERS.push({id, nickname:nick, email});
-  toast('회원가입이 완료되었습니다');
-  goto('login');
+async function doSignup() {
+  const id = document.getElementById('su-id').value.trim();
+  const pw = document.getElementById('su-pw').value;
+  const pw2 = document.getElementById('su-pw2').value;
+  const nick = document.getElementById('su-nick').value.trim() || '홈트초보';
+  const email = document.getElementById('su-email').value.trim();
+  if (!id) { toast('아이디를 입력해주세요'); return; }
+  if (pw !== pw2) { toast('비밀번호가 일치하지 않습니다'); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        loginId: id, password: pw, email, nickname: nick,
+        gender: state.signup.gender || 'male',
+        regionCity: state.signup.regionCity,
+        regionGu: state.signup.regionGu,
+        regionDong: state.signup.regionDong,
+      })
+    });
+    const body = await res.json();
+    if (!body.success) { toast(body.message || '회원가입에 실패했습니다'); return; }
+
+    state.token = body.data.accessToken;
+    state.user.id = body.data.userId;
+    state.user.nickname = body.data.nickname;
+    state.user.email = email;
+    state.user.gender = state.signup.gender || 'male';
+    state.user.region = `${state.signup.regionCity} ${state.signup.regionGu} ${state.signup.regionDong}`;
+    state.user.calibration = state.signup.calProfile || null;
+    await saveCalibrationToServer();
+    state.settings.account.nickname = state.user.nickname;
+    state.settings.account.regionCity = state.signup.regionCity;
+    state.settings.account.regionGu = state.signup.regionGu;
+    state.settings.account.regionDong = state.signup.regionDong;
+    toast('회원가입이 완료되었습니다');
+    goto('login');
+  } catch (err) {
+    toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');
+  }
 }
+
 
 /* ---------- 회원가입 : 실제 웹캠 캘리브레이션 모달 (MediaPipe Pose) ---------- */
 // (FR-AC-002) 이 구간(calStartCamera ~ calComputeProfile)은 브라우저 안에서 도는
 // MediaPipe Pose(WASM) 계산이라 그대로 프론트엔드에 남습니다 — 백엔드가 필요 없는 부분.
 //   웹캠 영상(JS) > MediaPipe Pose(WASM, 브라우저 내 실행) > 체형 프로필 계산(JS)
 // 계산된 결과를 실제로 "저장"하는 시점(아래 calApply())부터만 서버 연동이 필요합니다.
-function renderLogin(){
+function renderLogin() {
   return `
   <div class="center-shell">
     <div class="auth-card">
       <p class="auth-eyebrow">오운홈</p>
       <h1 class="auth-title">로그인</h1>
-      <p class="auth-sub">${state.user.nickname ? state.user.nickname+'님, 다시 오신 것을 환영해요' : '계정 정보를 입력해 주세요'}</p>
+      <p class="auth-sub">${state.user.nickname ? state.user.nickname + '님, 다시 오신 것을 환영해요' : '계정 정보를 입력해 주세요'}</p>
       <div class="field">
         <label for="li-id">아이디</label>
         <input id="li-id" type="text" placeholder="아이디" value="${state.user.nickname ? 'hometrainer01' : ''}">
@@ -162,7 +228,7 @@ function renderLogin(){
         <input id="li-pw" type="password" placeholder="••••••••" value="${state.user.nickname ? '········' : ''}">
       </div>
       <div class="flex-between" style="margin:2px 0 4px;">
-        <button class="btn btn-ghost btn-sm" style="padding-left:0;" onclick="openFindIdModal()">아이디 찾기</button>
+        <button class="btn btn-ghost btn-sm" onclick="openFindIdModal()">아이디 찾기</button>
         <button class="btn btn-ghost btn-sm" onclick="openFindPwModal()">비밀번호 찾기</button>
       </div>
       <button class="btn btn-primary btn-block" onclick="doLogin()">로그인</button>
@@ -172,7 +238,6 @@ function renderLogin(){
         <div style="flex:1;height:1px;background:var(--line);"></div>
       </div>
       <button class="btn btn-block" style="background:#FEE500;border-color:var(--outline);color:#241A00;margin-bottom:8px;" onclick="doSocialLogin('카카오')">카카오로 계속하기</button>
-      <button class="btn btn-block" style="background:#03C75A;border-color:var(--outline);color:#fff;margin-bottom:8px;" onclick="doSocialLogin('네이버')">네이버로 계속하기</button>
       <button class="btn btn-secondary btn-block" onclick="doSocialLogin('구글')">Google로 계속하기</button>
       <p class="switch-line">아직 계정이 없으신가요? <button onclick="goto('signup')">회원가입</button></p>
     </div>
@@ -180,38 +245,151 @@ function renderLogin(){
 }
 // [백엔드 연동 필요 구간] doLogin() 지점:
 //   로그인 폼 제출(여기) > Java 서버 로그인 API(비밀번호 검증, 세션/JWT 발급) > DB 연결 > SQL SELECT(계정 조회)
-function doLogin(){
-  if(!state.user.nickname){state.user.nickname='홈트초보';}
-  state.guestMode=false;
-  state.screen='app';
-  state.menu='main';
-  render();
+async function doLogin() {
+  const id = document.getElementById('li-id').value.trim();
+  const pw = document.getElementById('li-pw').value;
+  if (!id || !pw) { toast('아이디와 비밀번호를 입력해주세요'); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ loginId: id, password: pw })
+    });
+    const body = await res.json();
+    if (!body.success) { toast(body.message || '로그인에 실패했습니다'); return; }
+
+    state.token = body.data.accessToken;
+    await loadMyProfile();
+    state.user.id = body.data.userId;
+    state.user.nickname = body.data.nickname;
+    state.guestMode = false;
+    state.screen = 'app';
+    state.menu = 'main';
+    render();
+  } catch (err) {
+    toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');
+  }
 }
-// [백엔드 연동 필요 구간] doSocialLogin() — 실제로는 각 사(카카오/네이버/구글) OAuth 인가 코드를
-// 받아 Java 서버로 넘기고 > 서버가 토큰 교환 + 사용자 조회/생성(DB 연결, SQL INSERT or SELECT)을
-// 수행한 뒤 세션을 발급하는 흐름이 필요하다. 여기서는 버튼 클릭 시 바로 로그인된 것처럼 목업 처리.
-function doSocialLogin(provider){
-  if(!state.user.nickname){state.user.nickname='홈트초보';}
-  toast(`${provider} 계정으로 로그인했습니다`);
-  state.guestMode=false;
-  state.screen='app';
-  state.menu='main';
+
+async function loadMyProfile() {
+  if (!state.token) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/users/me`, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const body = await res.json();
+    if (!body.success) return;
+    const u = body.data;
+    state.user.nickname = u.nickname;
+    state.user.points = u.points;
+    state.user.exp = u.exp;
+    state.user.level = u.level;
+    state.user.streak = u.streak;
+    state.user.retakeTickets = u.retakeTickets;
+    state.user.nicknameTickets = u.nicknameTickets;
+    state.user.extraSets = u.extraSets;
+    state.user.setsUsedToday = u.setsUsedToday;
+    state.user.bio = u.bio || '';
+    state.user.region = (u.regionCity && u.regionGu && u.regionDong) ? `${u.regionCity} ${u.regionGu} ${u.regionDong}` : '';
+    state.settings.account.regionCity = u.regionCity;
+    state.settings.account.regionGu = u.regionGu;
+    state.settings.account.regionDong = u.regionDong;
+
+    if (!state.user.region) {
+      askConfirm('동네를 설정해주세요', '지역별 랭킹에 참여하려면 사는 동네를 등록해야 해요.', () => { closeConfirm(); goToAccountSettings(); }, '지금 설정하기');
+    }
+  } catch (err) {
+    console.error('프로필 불러오기 실패', err);
+  }
+}
+
+function goToAccountSettings() {
+  state.screen = 'app';
+  state.menu = 'profile';
+  state.subtabs.profile = 3;
   render();
 }
 
+
+// [백엔드 연동 필요 구간] doSocialLogin() — 실제로는 각 사(카카오/네이버/구글) OAuth 인가 코드를
+// 받아 Java 서버로 넘기고 > 서버가 토큰 교환 + 사용자 조회/생성(DB 연결, SQL INSERT or SELECT)을
+// 수행한 뒤 세션을 발급하는 흐름이 필요하다. 여기서는 버튼 클릭 시 바로 로그인된 것처럼 목업 처리.
+function doSocialLogin(provider) {
+  const redirectUri = OAUTH_REDIRECT_URI;
+  if (provider === '카카오') {
+    const clientId = '6cdf06ee0d4469694b390e529f65f741';
+    window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=kakao`;
+    return;
+  }
+  if (provider === '구글') {
+    const clientId = '117788279159-b9fv1cg9mivijt2r79680mua8u2a6o78.apps.googleusercontent.com';
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('email profile')}&state=google`;
+    return;
+  }
+}
+
+
+async function handleKakaoRedirect(code) {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/kakao/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const body = await res.json();
+    if (!body.success) { toast(body.message || '카카오 로그인에 실패했습니다'); return; }
+    state.token = body.data.accessToken;
+    await loadMyProfile();
+    state.user.id = body.data.userId;
+    state.user.nickname = body.data.nickname;
+    state.guestMode = false;
+    state.screen = 'app';
+    state.menu = 'main';
+    toast('카카오 계정으로 로그인했습니다');
+  } catch (err) {
+    toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');
+  }
+}
+
+async function handleGoogleRedirect(code) {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/google/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const body = await res.json();
+    if (!body.success) { toast(body.message || '구글 로그인에 실패했습니다'); return; }
+    state.token = body.data.accessToken;
+    await loadMyProfile();
+    state.user.id = body.data.userId;
+    state.user.nickname = body.data.nickname;
+    state.guestMode = false;
+    state.screen = 'app';
+    state.menu = 'main';
+    toast('구글 계정으로 로그인했습니다');
+  } catch (err) {
+    toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');
+  }
+}
+
+
+
+
 /* ---------- 아이디/비밀번호 찾기 모달 ---------- */
-function openFindIdModal(){ state.findIdModal={open:true, result:null}; render(); }
-function closeFindIdModal(){ state.findIdModal.open=false; render(); }
+function openFindIdModal() { state.findIdModal = { open: true, result: null }; render(); }
+function closeFindIdModal() { state.findIdModal.open = false; render(); }
 // [백엔드 연동 필요 구간] submitFindId() — 이메일로 인증코드 발송 > 코드 검증 API 호출 > DB 연결 >
 // SQL SELECT(이메일로 계정 조회)가 필요하다. 여기서는 목업으로 등록된 첫 계정을 바로 보여준다.
-function submitFindId(){
-  const email=document.getElementById('find-id-email').value.trim();
-  if(!email){ toast('이메일을 입력해주세요'); return; }
+function submitFindId() {
+  const email = document.getElementById('find-id-email').value.trim();
+  if (!email) { toast('이메일을 입력해주세요'); return; }
   state.findIdModal.result = EXISTING_USERS[0].id;
   render();
 }
-function renderFindIdModal(){
-  const m=state.findIdModal;
+function renderFindIdModal() {
+  const m = state.findIdModal;
   return `
   <div class="confirm-backdrop" onclick="if(event.target===this)closeFindIdModal()">
     <div class="confirm-box" style="max-width:380px;">
@@ -227,19 +405,19 @@ function renderFindIdModal(){
     </div>
   </div>`;
 }
-function openFindPwModal(){ state.findPwModal={open:true, done:false}; render(); }
-function closeFindPwModal(){ state.findPwModal.open=false; render(); }
+function openFindPwModal() { state.findPwModal = { open: true, done: false }; render(); }
+function closeFindPwModal() { state.findPwModal.open = false; render(); }
 // [백엔드 연동 필요 구간] submitFindPw() — 회원아이디+이메일로 본인 확인 > Java 계정 API > DB 연결 >
 // SQL SELECT로 일치 여부 확인 후 임시 비밀번호 발급·이메일 발송이 필요하다. 여기서는 목업 처리.
-function submitFindPw(){
-  const id=document.getElementById('find-pw-id').value.trim();
-  const email=document.getElementById('find-pw-email').value.trim();
-  if(!id || !email){ toast('아이디와 이메일을 모두 입력해주세요'); return; }
+function submitFindPw() {
+  const id = document.getElementById('find-pw-id').value.trim();
+  const email = document.getElementById('find-pw-email').value.trim();
+  if (!id || !email) { toast('아이디와 이메일을 모두 입력해주세요'); return; }
   state.findPwModal.done = true;
   render();
 }
-function renderFindPwModal(){
-  const m=state.findPwModal;
+function renderFindPwModal() {
+  const m = state.findPwModal;
   return `
   <div class="confirm-backdrop" onclick="if(event.target===this)closeFindPwModal()">
     <div class="confirm-box" style="max-width:380px;">

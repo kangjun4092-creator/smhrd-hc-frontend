@@ -7,12 +7,14 @@ const state = {
   // 액션"만 로그인으로 유도하기 위한 표시일 뿐, 화면 라우팅 자체는 바꾸지 않는다(startGuestExercise/
   // startGuestCrew, renderMain/renderCrewJoin/renderExStepSave의 guestMode 분기 참고).
   guestMode: false,
+  token: null,
+
   signup: {
     id:'', pw:'', pw2:'', nickname:'', email:'',
     regionCity:'서울시', regionGu:'강남구', regionDong:'역삼동', gender:'male', calibrated:false,
     calModalOpen:false, calStage:'idle', calProfile:null, calError:'',
   },
-  user: {nickname:'', avatar:0, gender:'male', points:1240, exp:62, level:7, region:'서울시 강남구 역삼동', retakeTickets:0, nicknameTickets:0, bio:'',
+  user: {id: null, nickname:'', avatar:0, gender:'male', points:1240, exp:62, level:7, region:'서울시 강남구 역삼동', retakeTickets:0, nicknameTickets:0, bio:'',
     streak:10, streakRewardClaimed:false, extraSets:0, setsUsedToday:0},
   menu: 'main',
   subtabs: {mission:0, profile:0, crew:0, ranking:0},

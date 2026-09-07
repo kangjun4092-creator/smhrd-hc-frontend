@@ -1,5 +1,9 @@
 // data.js — 정적 데이터/카탈로그 (종목, 일간 미션 템플릿, 지역 데이터 등). state.js가 이 파일의 generateSquatMissions()를 즉시 호출하므로 반드시 state.js보다 먼저 로드되어야 합니다.
 
+const API_BASE = 'https://m8zvvvvx-8080.jpe1.devtunnels.ms';
+const OAUTH_REDIRECT_URI = 'https://m8zvvvvx-5500.jpe1.devtunnels.ms/index.html';
+
+
 const EXS = [
   {id:'squat', name:'스쿼트', target:'하체 · 둔근', level:'초급'},
 ];

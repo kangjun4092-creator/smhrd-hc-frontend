@@ -1,7 +1,15 @@
-// bootstrap.js — 전역 클릭 리스너 등록 + render() 최초 호출. 반드시 모든 스크립트 중 가장 마지막에 로드되어야 합니다.
-
-document.addEventListener('click', e=>{
-  if(e.target && e.target.id==='confirm-yes' && state.confirm){ state.confirm.onYes(); }
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'confirm-yes' && state.confirm) { state.confirm.onYes(); }
 });
 
-render();
+(async function initApp() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const providerState = params.get('state');
+  if (code) {
+    window.history.replaceState({}, '', window.location.pathname);
+    if (providerState === 'google') await handleGoogleRedirect(code);
+    else await handleKakaoRedirect(code);
+  }
+  render();
+})();

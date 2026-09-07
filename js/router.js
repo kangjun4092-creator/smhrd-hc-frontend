@@ -87,7 +87,7 @@ function renderApp(){
     <div class="main">
       <div class="topbar">
         <div>
-          <div class="topbar-title">${state.guestMode ? `<span style="cursor:pointer;text-decoration:underline;" onclick="goto('login')">동네설정하기</span>` : state.user.region}</div>
+          <div class="topbar-title">${state.guestMode ? `<span style="cursor:pointer;text-decoration:underline;" onclick="goto('login')">동네설정하기</span>` : (state.user.region || `<span style="cursor:pointer;text-decoration:underline;" onclick="goToAccountSettings()">동네설정하기</span>`)}</div>
         </div>
         <div class="user-chip">
           <div class="points-pill">P <span class="mono">${state.guestMode ? 0 : state.user.points.toLocaleString()}</span></div>

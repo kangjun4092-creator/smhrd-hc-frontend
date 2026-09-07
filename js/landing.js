@@ -30,6 +30,7 @@ function renderLandingBottomNav(){
     {icon:'🏠', label:'홈', action:"window.scrollTo({top:0,behavior:'smooth'})"},
     {icon:'🎯', label:'AI 자세판정', action:'startGuestExercise()'},
     {icon:'⚔️', label:'크루대전', action:'startGuestCrew()'},
+    {icon:'👤', label:'회원가입/로그인', action:"goto('login')"},
   ];
   return `
   <nav class="landing-bottomnav">
@@ -52,10 +53,7 @@ function renderIntro(){
       <img src="assets/logo.png" alt="오운홈" style="width:180px;max-width:60%;margin:0 auto 8px;display:block;">
       <h1>집에서, 우리 동네 사람들과 함께 운동해요</h1>
       <p>웹캠으로 자세를 실시간 판정하고, 미션과 랭킹으로 이웃과 함께 성장하는 홈트레이닝 서비스예요.</p>
-      <div class="cta-row">
-        <button class="btn btn-primary" style="padding:12px 28px;" onclick="goto('signup')">회원가입</button>
-        <button class="btn btn-secondary" style="padding:12px 28px;" onclick="goto('login')">기존 계정 로그인</button>
-      </div>
+      
     </div>
     <div class="landing-body">
       <h2 class="landing-section-title">이런 걸 할 수 있어요</h2>

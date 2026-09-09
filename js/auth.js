@@ -221,11 +221,11 @@ function renderLogin() {
       <p class="auth-sub">${state.user.nickname ? state.user.nickname + '님, 다시 오신 것을 환영해요' : '계정 정보를 입력해 주세요'}</p>
       <div class="field">
         <label for="li-id">아이디</label>
-        <input id="li-id" type="text" placeholder="아이디" value="${state.user.nickname ? 'hometrainer01' : ''}">
+        <input id="li-id" type="text" placeholder="아이디" value="${state.user.nickname ? 'hometrainer01' : ''}" onkeydown="if(event.key==='Enter') doLogin()">
       </div>
       <div class="field">
         <label for="li-pw">비밀번호</label>
-        <input id="li-pw" type="password" placeholder="••••••••" value="${state.user.nickname ? '········' : ''}">
+        <input id="li-pw" type="password" placeholder="••••••••" value="${state.user.nickname ? '········' : ''}" onkeydown="if(event.key==='Enter') doLogin()">
       </div>
       <div class="flex-between" style="margin:2px 0 4px;">
         <button class="btn btn-ghost btn-sm" onclick="openFindIdModal()">아이디 찾기</button>
@@ -260,12 +260,16 @@ async function doLogin() {
     if (!body.success) { toast(body.message || '로그인에 실패했습니다'); return; }
 
     state.token = body.data.accessToken;
+    saveSession(state.token);
     await loadMyProfile();
+    await loadExerciseHistory();
+    await loadMyCrew();
     state.user.id = body.data.userId;
     state.user.nickname = body.data.nickname;
     state.guestMode = false;
     state.screen = 'app';
     state.menu = 'main';
+    saveSessionMenu('main');
     render();
   } catch (err) {
     toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');
@@ -281,6 +285,7 @@ async function loadMyProfile() {
     const body = await res.json();
     if (!body.success) return;
     const u = body.data;
+    state.user.id = u.id;
     state.user.nickname = u.nickname;
     state.user.points = u.points;
     state.user.exp = u.exp;
@@ -295,6 +300,22 @@ async function loadMyProfile() {
     state.settings.account.regionCity = u.regionCity;
     state.settings.account.regionGu = u.regionGu;
     state.settings.account.regionDong = u.regionDong;
+
+        // 캘리브레이션은 계정에 저장돼 있어도 로그인할 때 자동으로 안 불러와지고 있었다 —
+    // 그래서 매번 다시 하라고 뜬 것. 여기서 서버에 저장된 값을 가져와 채워준다.
+    try {
+      const calRes = await fetch(`${API_BASE}/api/users/me/calibration`, {
+        headers: { 'Authorization': 'Bearer ' + state.token }
+      });
+      const calBody = await calRes.json();
+      if (calBody.success && calBody.data && calBody.data.profileJson) {
+        state.user.calibration = JSON.parse(calBody.data.profileJson);
+      }
+    } catch (err) {
+      console.error('캘리브레이션 불러오기 실패', err);
+    }
+
+
 
     if (!state.user.region) {
       askConfirm('동네를 설정해주세요', '지역별 랭킹에 참여하려면 사는 동네를 등록해야 해요.', () => { closeConfirm(); goToAccountSettings(); }, '지금 설정하기');
@@ -340,12 +361,16 @@ async function handleKakaoRedirect(code) {
     const body = await res.json();
     if (!body.success) { toast(body.message || '카카오 로그인에 실패했습니다'); return; }
     state.token = body.data.accessToken;
+    saveSession(state.token);
     await loadMyProfile();
+    await loadExerciseHistory();
+    await loadMyCrew();
     state.user.id = body.data.userId;
     state.user.nickname = body.data.nickname;
     state.guestMode = false;
     state.screen = 'app';
     state.menu = 'main';
+    saveSessionMenu('main');
     toast('카카오 계정으로 로그인했습니다');
   } catch (err) {
     toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');
@@ -362,12 +387,16 @@ async function handleGoogleRedirect(code) {
     const body = await res.json();
     if (!body.success) { toast(body.message || '구글 로그인에 실패했습니다'); return; }
     state.token = body.data.accessToken;
+    saveSession(state.token);
     await loadMyProfile();
+    await loadExerciseHistory();
+    await loadMyCrew();
     state.user.id = body.data.userId;
     state.user.nickname = body.data.nickname;
     state.guestMode = false;
     state.screen = 'app';
     state.menu = 'main';
+    saveSessionMenu('main');
     toast('구글 계정으로 로그인했습니다');
   } catch (err) {
     toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');

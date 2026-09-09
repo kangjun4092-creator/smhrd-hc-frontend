@@ -444,7 +444,7 @@ tr:last-child td{border-bottom:none;}
 }
 
 .confirm-backdrop{position:fixed;inset:0;background:rgba(20,15,8,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
-.confirm-box{background:var(--surface);border:2.5px solid var(--outline);border-radius:20px;padding:24px;max-width:340px;box-shadow:4px 5px 0 var(--outline);}
+.confirm-box{background:var(--surface);border:2.5px solid var(--outline);border-radius:20px;padding:24px;max-width:340px;box-shadow:4px 5px 0 var(--outline);max-height:92vh;overflow-y:auto;}
 .confirm-box h3{margin:0 0 8px;}
 .confirm-box p{color:var(--ink-dim);font-size:13px;line-height:1.55;margin:0 0 18px;}
 .confirm-actions{display:flex;gap:8px;justify-content:flex-end;}

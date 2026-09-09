@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --max-time 8 https://m8zvvvvx-8080.jpe1.devtunnels.ms/api/crews/me/chat)",
+      "Bash(curl -s --max-time 8 https://m8zvvvvx-8080.jpe1.devtunnels.ms/api/crews/me/chat)",
+      "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\" --max-time 8 \"https://m8zvvvvx-8080.jpe1.devtunnels.ms/ws/info?t=123\")",
+      "Bash(find /c/Users/baby4 -maxdepth 2 -iname \"*backend*\" -o -maxdepth 2 -iname \"*hc-*\" 2>/dev/null)",
+      "Read(//c/Users/baby4/**)",
+      "Read(//c/Users/baby4/smhrd-hc-backend/**)",
+      "Read(//c/Users/baby4/smhrd-hc-backend/src/main/java/com/smhrd/hometraining/crew/**)",
+      "Read(//c/Users/baby4/smhrd-hc-backend/src/main/java/com/smhrd/hometraining/config/**)",
+      "Bash(powershell -NoProfile -Command \"Get-Process java -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime\")",
+      "Bash(powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | Select-Object OwningProcess\")",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter 'ProcessId=20336' | Select-Object CommandLine | Format-List\")",
+      "Read(//c/Users/baby4/smhrd-hc-backend/src/main/resources/**)",
+      "Read(//c/Users/baby4/smhrd-hc-backend/src/main/java/**)",
+      "Bash(find /c/Users/baby4/smhrd-hc-backend/src/main/resources -maxdepth 1 -type f)",
+      "Bash(mysql --version)",
+      "Read(//c/Program Files/MySQL/**)",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -h 127.0.0.1 -P 3306 -u hometraining -phometraining1234 hometraining -e \"SHOW TABLES LIKE '%chat%';\")",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -h 127.0.0.1 -P 3306 -u hometraining -phometraining1234 hometraining -e \"DESCRIBE crew_chat_messages; SELECT * FROM crew_chat_messages ORDER BY sent_at DESC LIMIT 10;\")",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -h 127.0.0.1 -P 3306 -u hometraining -phometraining1234 hometraining -e \"SELECT COUNT\\(*\\) AS cnt FROM crew_chat_messages;\")",
+      "Bash(cd /c/Users/baby4/smhrd-hc-backend && ls)",
+      "Bash(./mvnw -q -o compile)",
+      "Bash(cmd.exe /c \"mvnw.cmd -q -o compile\")",
+      "Bash(mvn -v)",
+      "Bash(grep -n \"browse\\\\|permitAll\\\\|antMatchers\\\\|requestMatchers\" \"C:\\\\Users\\\\baby4\\\\smhrd-hc-backend\\\\src\\\\main\\\\java\\\\com\\\\smhrd\\\\hometraining\\\\config\\\\SecurityConfig.java\" | head -40)",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -h 127.0.0.1 -P 3306 -u hometraining -phometraining1234 hometraining -e \"SELECT COUNT\\(*\\) AS cnt FROM crew_chat_messages; SELECT id, crew_id, sender_id, text, sent_at FROM crew_chat_messages ORDER BY sent_at DESC LIMIT 10;\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\baby4\\smhrd-hc-backend\\src\\main\\java\\com\\smhrd\\hometraining\\config",
+      "C:\\Users\\baby4\\smhrd-hc-backend\\src\\main\\java\\com\\smhrd\\hometraining\\crew\\dto",
+      "C:\\Users\\baby4\\smhrd-hc-backend\\src\\main\\java\\com\\smhrd\\hometraining\\crew",
+      "C:\\Users\\baby4\\smhrd-hc-backend\\src\\main\\java\\com\\smhrd\\hometraining\\crew\\repository"
+    ]
+  }
+}

@@ -299,6 +299,60 @@ function renderHistory() {
       </div>`).join('')}
   </div>`;
 }
+
+async function loadExerciseHistory() {
+  if (!state.token) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/exercise-records`, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const body = await res.json();
+    if (!body.success) return;
+    state.history = body.data.map(r => {
+      const d = new Date(r.recordedAt);
+      const date = `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+      return {
+        date, ex: r.exerciseType, reps: r.reps, acc: r.accuracy, score: r.score, grade: r.grade,
+        gc: { PERFECT: r.perfectCount, GREAT: r.greatCount, GOOD: r.goodCount, MISS: r.missCount },
+      };
+    });
+  } catch (err) {
+    console.error('운동 히스토리 불러오기 실패', err);
+  }
+}
+
+async function loadMyCrew() {
+  if (!state.token) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/crews/me`, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const body = await res.json();
+    if (!body.success) return;
+    const c = body.data;
+    if (!c) {
+      state.crew.created = false;
+      return;
+    }
+    state.crew.id = c.id;
+    state.crew.created = true;
+    state.crew.name = c.name;
+    state.crew.desc = c.description;
+    state.crew.concepts = [c.concept];
+    state.crew.region = c.region;
+    state.crew.level = c.level;
+    state.crew.exp = c.exp;
+    state.crew.groupMission = { ex: c.groupMissionExercise, target: c.groupMissionTarget, progress: c.groupMissionCurrent };
+    state.crew.members = c.members.map(m => ({
+      userId: m.userId, n: m.nickname, role: m.role === 'LEADER' ? '팀장' : '팀원', level: m.level, score: m.points
+    }));
+  } catch (err) {
+    console.error('내 크루 정보 불러오기 실패', err);
+  }
+}
+
+
+
 /* ========================================================================
    고객센터 · 불편사항접수
    ======================================================================== */
@@ -397,9 +451,34 @@ function renderSetLogout() {
     </div>
   </div>`;
 }
-function doLogout() { state.screen = 'login'; render(); }
-function doWithdraw() {
+// 예전엔 화면만 login으로 바꾸고 토큰은 그대로 메모리에 남아있어서, 로그아웃해도 실제로는
+// 로그인 상태 그대로였다(거기다 새로고침 자동복원까지 생기면 로그아웃 자체가 무의미해짐).
+// 토큰·저장된 세션을 전부 지우고 랜딩페이지로 보내야 진짜 로그아웃이다.
+function doLogout() {
+  disconnectCrewChat();
+  clearSession();
+  state.token = null;
+  state.user.id = null;
+  state.guestMode = false;
+  state.screen = 'intro';
+  state.menu = 'main';
+  render();
+}
+async function doWithdraw() {
   closeConfirm();
+  try {
+    const res = await fetch(`${API_BASE}/api/users/me`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const body = await res.json();
+    if (!body.success) { toast(body.message || '회원 탈퇴에 실패했습니다'); return; }
+  } catch (err) {
+    toast('서버에 연결할 수 없습니다 (백엔드가 켜져 있는지 확인해주세요)');
+    return;
+  }
+  disconnectCrewChat();
+  clearSession(); // 탈퇴한 계정 토큰으로 새로고침 시 자동 로그인되는 걸 막는다
   toast('회원 탈퇴가 완료되었습니다');
   setTimeout(() => {
     location.reload();

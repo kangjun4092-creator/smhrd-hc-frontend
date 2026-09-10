@@ -47,12 +47,15 @@ function calRetake(){
   state.signup.calError = '';
   render();
 }
-// [백엔드 연동 필요 구간] calApply() 지점: 계산된 관절 좌표·체형 프로필(JSON)을 실제로 남기려면
-//   calApply() 호출(여기) > Java 서버 캘리브레이션 저장 API > DB 연결 > SQL INSERT(캘리브레이션 테이블, 또는 JSON 컬럼)
+// 서버 저장 실패를 조용히 넘기면(과거엔 catch에서 console.error만 찍었음) 화면엔 "저장됐다"고
+// 뜨는데 실제로는 DB에 안 남아서, 다음 로그인 때마다 다시 캘리브레이션을 하라고 뜨는 원인이 됐었다
+// (2026-09-10, calibration_profiles 컬럼이 tinytext라 항상 저장 실패 → LONGTEXT로 수정하며 발견).
+// 재발 방지 차원에서 실패 시 반드시 에러 토스트로 알리도록 함. 반환값(성공 여부)으로 호출부가
+// 필요하면 추가 분기를 할 수 있게 한다.
 async function saveCalibrationToServer(){
-  if(!state.token || !state.signup.calProfile) return;
+  if(!state.token || !state.signup.calProfile) return false;
   try{
-    await fetch(`${API_BASE}/api/users/me/calibration`, {
+    const res = await fetch(`${API_BASE}/api/users/me/calibration`, {
       method:'PUT',
       headers:{
         'Content-Type':'application/json',
@@ -60,8 +63,17 @@ async function saveCalibrationToServer(){
       },
       body: JSON.stringify({ profileJson: JSON.stringify(state.signup.calProfile) })
     });
+    const body = await res.json();
+    if(!body.success){
+      console.error('캘리브레이션 저장 실패', body.message);
+      toast('체형 보정 저장에 실패했습니다. 다시 시도해주세요.');
+      return false;
+    }
+    return true;
   }catch(err){
     console.error('캘리브레이션 저장 실패', err);
+    toast('체형 보정을 서버에 저장하지 못했습니다 (네트워크 확인)');
+    return false;
   }
 }
 
@@ -456,15 +468,15 @@ function renderCalLive(s){
           <div class="msg" id="cal-hold-label">보정 유지 시간</div>
         </div>
       </div>
-      <button class="btn btn-primary btn-block" id="cal-start-btn" style="margin-top:12px;opacity:.4;cursor:not-allowed;" disabled onclick="calStartCamera()">카메라 시작</button>
-      <p class="hint" id="cal-start-hint" style="margin-top:6px;">키·몸무게를 먼저 입력해주세요.</p>
-      ${s.calError ? `<p class="hint" style="color:var(--danger);margin-top:8px;">${s.calError}</p>` : ''}
     </div>
     <div>
       <div class="check" id="cal-check-body"><span class="dot"></span>전신 인식 (머리~발목)</div>
       <div class="check" id="cal-check-dist" style="margin-top:8px;"><span class="dot"></span>적정 거리</div>
       <div class="check" id="cal-check-center" style="margin-top:8px;"><span class="dot"></span>중앙 정렬</div>
-      <button class="btn btn-ghost btn-block" style="margin-top:14px;" onclick="closeCalibrationModal()">닫기</button>
+      <button class="btn btn-primary btn-block" id="cal-start-btn" style="margin-top:14px;opacity:.4;cursor:not-allowed;" disabled onclick="calStartCamera()">카메라 시작</button>
+      <p class="hint" id="cal-start-hint" style="margin-top:6px;">키·몸무게를 먼저 입력해주세요.</p>
+      ${s.calError ? `<p class="hint" style="color:var(--danger);margin-top:8px;">${s.calError}</p>` : ''}
+      <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="closeCalibrationModal()">닫기</button>
     </div>
   </div>`;
 }

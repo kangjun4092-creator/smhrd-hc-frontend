@@ -20,6 +20,7 @@ document.addEventListener('click', e => {
       await loadMyProfile();
       await loadExerciseHistory();
       await loadMyCrew();
+      await loadTodayMissions();
       if (state.user.id) { // loadMyProfile()은 토큰이 만료/무효해도 던지지 않고 조용히 실패한다
         state.guestMode = false;
         state.screen = 'app';

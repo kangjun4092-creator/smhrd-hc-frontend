@@ -15,7 +15,7 @@ function loadCharSprite(gender, src){
   const img=new Image();
   img.onload=()=>{
     CHAR_SPRITES[gender]=img;
-    drawAvatarCanvas(); drawTopbarAvatar(); drawPodiumChars();
+    drawAvatarCanvas(); drawTopbarAvatar(); drawPodiumChars(); drawMainCharCanvas();
   };
   img.src=src;
 }

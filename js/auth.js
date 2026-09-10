@@ -286,6 +286,7 @@ async function loadMyProfile() {
     if (!body.success) return;
     const u = body.data;
     state.user.id = u.id;
+    state.user.role = u.role || 'USER'; // 'ADMIN'이면 고객센터에 전체 문의 관리 화면이 뜬다(support.js)
     state.user.nickname = u.nickname;
     state.user.points = u.points;
     state.user.exp = u.exp;
@@ -300,6 +301,7 @@ async function loadMyProfile() {
     state.settings.account.regionCity = u.regionCity;
     state.settings.account.regionGu = u.regionGu;
     state.settings.account.regionDong = u.regionDong;
+    state.settings.account.profilePublic = u.profilePublic !== false;
 
         // 캘리브레이션은 계정에 저장돼 있어도 로그인할 때 자동으로 안 불러와지고 있었다 —
     // 그래서 매번 다시 하라고 뜬 것. 여기서 서버에 저장된 값을 가져와 채워준다.

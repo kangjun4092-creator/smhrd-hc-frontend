@@ -5,18 +5,15 @@ function renderShop(){
   <div class="view-head"><h1>포인트 상점</h1></div>
   ${renderMissionShop()}`;
 }
-const SHOP_CATEGORIES=['전체','의상','배경','기타'];
-// '의상'/'배경' 아이템만 캐릭터 외형에 실제로 반영되는 슬롯이라 '착용해보기' 미리보기를 지원한다
-// (닉네임 컬러 이펙트 같은 '기타' 아이템은 캐릭터 그림에 영향이 없어 미리볼 게 없다).
+const SHOP_CATEGORIES=['헤어','상의','하의','신발','기타'];
 function renderMissionShop(){
-  const f=state.shopFilter||'전체';
-  const items=state.shopItems.map((it,idx)=>({it,idx})).filter(({it})=>f==='전체'||it.category===f);
+  const f=state.shopFilter||SHOP_CATEGORIES[0];
+  const items=state.shopItems.map((it,idx)=>({it,idx})).filter(({it})=>it.category===f);
   return `
-  <p class="hint" style="margin-bottom:14px;">아이템마다 적용되는 능력치가 다릅니다. 구매 전 효과를 확인하세요.</p>
   <div class="subtabs">
     ${SHOP_CATEGORIES.map(c=>`<div class="tab ${f===c?'active':''}" onclick="setShopFilter('${c}')">${c}</div>`).join('')}
   </div>
-  <div class="grid grid-3" style="max-width:640px;">
+  <div class="grid grid-3" style="max-width:640px;margin:0 auto;">
     ${items.map(({it,idx})=>`
       <div class="card">
         <div class="feed-media" style="height:88px;">${it.name}</div>
@@ -29,7 +26,7 @@ function renderMissionShop(){
         <div class="flex-between" style="margin-top:6px;gap:8px;">
           <span class="shop-price">P ${it.price}</span>
           <div style="display:flex;gap:6px;">
-            ${(it.category==='의상'||it.category==='배경')?`<button class="btn btn-sm btn-secondary" onclick="${state.guestMode ? "goto('login')" : `openItemPreview(${idx})`}">착용해보기</button>`:''}
+            ${it.slot?`<button class="btn btn-sm btn-secondary" onclick="${state.guestMode ? "goto('login')" : `openItemPreview(${idx})`}">착용해보기</button>`:''}
             <button class="btn btn-sm ${(it.owned && !it.consumable)?'btn-ghost':'btn-primary'}" ${(it.owned && !it.consumable)?'disabled style="opacity:.5;"':''} onclick="${state.guestMode ? "goto('login')" : `buyItem(${idx})`}">${(it.owned && !it.consumable)?'보유중':'구매하기'}</button>
           </div>
         </div>

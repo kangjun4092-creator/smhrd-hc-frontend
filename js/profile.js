@@ -96,7 +96,7 @@ function renderMissionAvatar() {
   const nickColor = getEquipState().nickname ? 'var(--gold)' : 'inherit';
   const stats = getProfileStats();
   return `
-  <div class="grid grid-2">
+  <div class="grid grid-fixed-2">
     <div class="card" style="text-align:center;">
       <p class="section-label">내 캐릭터</p>
       <canvas id="avatar-char-canvas" style="width:144px;height:176px;margin:10px auto;display:block;border-radius:10px;image-rendering:pixelated;"></canvas>
@@ -367,28 +367,69 @@ function renderSetAccount() {
   const gu = REGION_DATA[city][a.regionGu] ? a.regionGu : gus[0];
   const dongs = REGION_DATA[city][gu];
   const dong = dongs.includes(a.regionDong) ? a.regionDong : dongs[0];
+  // 화면엔 항상 유효한 기본값이 보이지만(드롭다운 fallback), 여긴 그냥 표시용 계산이라 실제
+  // state.settings.account 쪽은 그대로 null일 수 있었다 — 그 상태로 드롭다운을 안 건드리고
+  // 바로 "저장"을 누르면 서버에 null이 그대로 전송되고, 서버는 null을 무시하니 지역이 영영
+  // 저장되지 않았다(계정 생성 시 지역이 비어있던 사용자가 겪은 "동네 undefined" 버그의 원인).
+  // 화면에 보이는 값과 실제 저장될 값을 여기서 맞춰둔다.
+  a.regionCity = city; a.regionGu = gu; a.regionDong = dong;
   const canEditNick = (state.user.nicknameTickets || 0) > 0;
   return `
-  <div class="card" style="max-width:460px;">
-    <p class="section-label">프로필</p>
-    <div class="field">
-      <label for="acc-nick">닉네임</label>
-      <input id="acc-nick" value="${state.user.nickname}" ${canEditNick ? '' : 'disabled'}>
-      <p class="hint">${canEditNick ? `닉네임 변경권 보유중 · 저장 시 1장이 사용됩니다 (남은 수량 ${state.user.nicknameTickets}장)` : `닉네임 변경은 포인트 상점에서 '닉네임 변경권'을 구매한 뒤 가능합니다.`}</p>
-      ${canEditNick ? '' : '<button class="btn btn-sm btn-secondary" style="margin-top:6px;" onclick="setMenu(\'shop\')">포인트 상점으로 이동</button>'}
-    </div>
-    <div class="field">
-      <label>활동 지역</label>
-      <div class="field-row">
-        <select onchange="setAccountCity(this.value)" style="flex:1;min-width:0;">${cities.map(c => `<option ${c === city ? 'selected' : ''}>${c}</option>`).join('')}</select>
-        <select onchange="setAccountGu(this.value)" style="flex:1;min-width:0;">${gus.map(g => `<option ${g === gu ? 'selected' : ''}>${g}</option>`).join('')}</select>
-        <select onchange="setAccountDong(this.value)" style="flex:1;min-width:0;">${dongs.map(d => `<option ${d === dong ? 'selected' : ''}>${d}</option>`).join('')}</select>
+  <div style="max-width:640px;margin:0 auto;">
+    <div class="card">
+      <p class="section-label">프로필</p>
+      <div class="field">
+        <label for="acc-nick">닉네임</label>
+        <input id="acc-nick" value="${state.user.nickname}" ${canEditNick ? '' : 'disabled'}>
+        <p class="hint">${canEditNick ? `닉네임 변경권 보유중 · 저장 시 1장이 사용됩니다 (남은 수량 ${state.user.nicknameTickets}장)` : `닉네임 변경은 포인트 상점에서 '닉네임 변경권'을 구매한 뒤 가능합니다.`}</p>
+        ${canEditNick ? '' : '<button class="btn btn-sm btn-secondary" style="margin-top:6px;" onclick="setMenu(\'shop\')">포인트 상점으로 이동</button>'}
       </div>
+      <div class="field">
+        <label>활동 지역</label>
+        <div class="field-row">
+          <select onchange="setAccountCity(this.value)" style="flex:1;min-width:0;">${cities.map(c => `<option ${c === city ? 'selected' : ''}>${c}</option>`).join('')}</select>
+          <select onchange="setAccountGu(this.value)" style="flex:1;min-width:0;">${gus.map(g => `<option ${g === gu ? 'selected' : ''}>${g}</option>`).join('')}</select>
+          <select onchange="setAccountDong(this.value)" style="flex:1;min-width:0;">${dongs.map(d => `<option ${d === dong ? 'selected' : ''}>${d}</option>`).join('')}</select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveAccount()">저장</button>
     </div>
-    <button class="btn btn-primary" onclick="saveAccount()">저장</button>
-  </div>
-  <div style="margin-top:20px;">${renderSetCalib()}</div>
-  <div style="margin-top:20px;">${renderSetLogout()}</div>`;
+    <div style="margin-top:20px;">${renderSetPrivacy()}</div>
+    <div style="margin-top:20px;">${renderSetCalib()}</div>
+    <div style="margin-top:20px;">${renderSetLogout()}</div>
+  </div>`;
+}
+// 공개로 두면 랭킹 단상 아바타를 클릭한 다른 사용자가 내 레벨·자기소개·누적성과·등급비율·
+// 운동별 누적횟수를 볼 수 있다(PublicProfileController 참고). 비공개면 서버가 nickname 외엔
+// 아예 안 내려주니, 프론트에서 막는 게 아니라 진짜로 안 보인다.
+function renderSetPrivacy() {
+  const isPublic = state.settings.account.profilePublic !== false;
+  return `
+  <div class="card">
+    <p class="section-label">프로필 공개 설정</p>
+    <p class="desc">공개로 설정하면 랭킹에서 다른 사용자가 내 프로필(레벨·자기소개·누적성과·등급비율·운동별 누적횟수)을 확인할 수 있어요.</p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-sm ${isPublic ? 'btn-primary' : 'btn-secondary'}" onclick="setProfilePublic(true)">공개</button>
+      <button class="btn btn-sm ${!isPublic ? 'btn-primary' : 'btn-secondary'}" onclick="setProfilePublic(false)">비공개</button>
+    </div>
+  </div>`;
+}
+async function setProfilePublic(pub) {
+  if (state.settings.account.profilePublic === pub) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/users/me`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
+      body: JSON.stringify({ profilePublic: pub })
+    });
+    const body = await res.json();
+    if (!body.success) { toast(body.message || '저장에 실패했습니다'); return; }
+    state.settings.account.profilePublic = pub;
+    toast(pub ? '프로필을 공개로 설정했습니다' : '프로필을 비공개로 설정했습니다');
+    render();
+  } catch (err) {
+    toast('서버에 연결할 수 없습니다');
+  }
 }
 function setAccountCity(v) { state.settings.account.regionCity = v; state.settings.account.regionGu = null; state.settings.account.regionDong = null; render(); }
 function setAccountGu(v) { state.settings.account.regionGu = v; state.settings.account.regionDong = null; render(); }
@@ -419,7 +460,11 @@ async function saveAccount() {
       nickMsg = ` · 닉네임 변경 (남은 변경권 ${state.user.nicknameTickets}장)`;
     }
     state.user.nickname = body.data.nickname;
-    state.user.region = `${body.data.regionCity} ${body.data.regionGu} ${body.data.regionDong}`;
+    // regionCity 등이 서버에 null로 남아있으면 응답 JSON에 해당 키 자체가 없다(전역 Jackson
+    // 설정이 null 필드를 생략함) — 그대로 템플릿에 넣으면 "undefined undefined undefined"가
+    // 찍힌다. loadMyProfile()과 동일하게 셋 다 있을 때만 조합한다.
+    const d = body.data;
+    state.user.region = (d.regionCity && d.regionGu && d.regionDong) ? `${d.regionCity} ${d.regionGu} ${d.regionDong}` : '';
     a.nickname = state.user.nickname;
     toast(`프로필이 저장되었습니다${nickMsg}`);
     render();
@@ -430,7 +475,7 @@ async function saveAccount() {
 
 function renderSetCalib() {
   return `
-  <div class="card" style="max-width:460px;">
+  <div class="card">
     <p class="section-label">카메라 캘리브레이션</p>
     <p class="desc">촬영 각도·거리·신체 비율을 다시 측정하여 분석 정확도를 갱신합니다.</p>
     <button class="btn btn-secondary btn-block" onclick="toast('체형 보정을 다시 진행했습니다')">캘리브레이션 다시 진행</button>

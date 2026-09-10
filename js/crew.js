@@ -2,13 +2,17 @@
 
 // 팀장일 때만 '크루원관리' 탭이 추가로 붙는다 (가입요청 승인·강퇴는 팀장 전용 화면으로 분리).
 function getCrewPageTabs() {
-  const tabs = ['크루 메인', '크루채팅', '크루공지', '크루원 정보'];
+  // 공지는 이제 별도 탭이 아니라 크루 메인 화면 안에 카드로 들어가 있다(renderCrewNoticeCard).
+  const tabs = ['크루 메인', '크루채팅', '크루원 정보'];
   if (getMyCrewRole() === '팀장') tabs.push('크루원관리');
   return tabs;
 }
 // 크루를 만들 때 반드시 하나 고르는 컨셉 태그. 가입 목록 카드와 크루 내부(view-head)에
 // 계속 노출해서, 이 크루가 어떤 성향인지 한눈에 알 수 있게 한다.
 const CREW_CONCEPTS = ['다이어트', '크루랭킹', '친목', '근육강화', '건강유지'];
+// 크루대전 카드의 "5vs5" 느낌을 내는 작은 사람 실루엣 아이콘 — currentColor라 부모의 color만
+// 바꾸면 색이 따라온다(renderCrewOverview의 크루대전 카드에서 5개씩 두 줄로 씀).
+const BATTLE_PERSON_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" style="display:block;"><circle cx="12" cy="7" r="4" fill="currentColor"/><path d="M4 22c0-4.4 3.58-8 8-8s8 3.6 8 8" fill="currentColor"/></svg>`;
 const CREW_EXP_PER_LEVEL = 2000; // 크루 레벨업에 필요한 경험치량 (레벨마다 동일하게 고정)
 const CREW_CONCEPT_MAX = 3;
 function setCrewConcept(c) {
@@ -64,19 +68,18 @@ function renderCrew() {
   const tabs = getCrewPageTabs();
   const activeTab = tabs[i] || tabs[0];
   return `
-  <div class="view-head"><h1>${state.crew.name} ${(state.crew.concepts || []).map(c => `<span class="pill pill-accent" style="vertical-align:middle;">#${c}</span>`).join(' ')}</h1></div>
+  <div class="view-head"><h1>${state.crew.name}</h1></div>
   <div class="subtabs subtabs-compact">
     ${tabs.map((t, idx) => `<div class="tab ${i === idx ? 'active' : ''}" onclick="setSub('crew',${idx})">${t}</div>`).join('')}
   </div>
   ${activeTab === '크루 메인' ? renderCrewOverview()
       : activeTab === '크루채팅' ? renderCrewChat()
-        : activeTab === '크루공지' ? renderCrewNotice()
-          : activeTab === '크루원 정보' ? renderCrewMembers()
-            : renderCrewManage()}`;
+        : activeTab === '크루원 정보' ? renderCrewMembers()
+          : renderCrewManage()}`;
 }
 function renderCrewCreate() {
   return `
-  <div class="card" style="max-width:480px;">
+  <div class="card" style="max-width:480px;margin:0 auto;">
     <p class="section-label">새 크루 만들기 (포인트 100 소모)</p>
     <div class="field">
       <label>활동 지역</label>
@@ -311,6 +314,9 @@ function getMyCrewRole() {
   const me = state.crew.members.find(m => m.userId === state.user.id);
   return me ? me.role : '팀원';
 }
+// 내부 로직·비교는 계속 '팀장'/'팀원' 값을 그대로 쓰고(getMyCrewRole() === '팀장' 같은 코드가
+// 여러 군데라 값 자체를 바꾸면 범위가 커진다), 화면에 보여줄 때만 이 함수로 라벨을 바꿔친다.
+function crewRoleLabel(role) { return role === '팀장' ? '크루장' : '크루원'; }
 
 
 function toggleMyCrewRole() {
@@ -336,16 +342,23 @@ function renderCrewOverview() {
       ? '✅ 파티 완료! 대전을 시작할 수 있어요.'
       : `파티 신청 중 · ${party.invites.filter(x => x.status === 'accepted').length}/${party.invites.length}명 수락`;
   return `
-  <div class="grid grid-2" style="align-items:start;">
-    <div class="card">
+  ${renderCrewNoticeCard()}
+  <div class="grid grid-fixed-2" style="align-items:stretch;">
+    <div class="card" style="display:flex;flex-direction:column;">
       <p class="section-label">크루 레벨 · 누적 경험치</p>
       <div class="stat-row">
         <div class="stat-box"><div class="num mono">Lv.${state.crew.level}</div><div class="lbl">크루 레벨</div></div>
         <div class="stat-box"><div class="num mono">${(state.crew.exp || 0).toLocaleString()}</div><div class="lbl">누적 경험치</div></div>
         <div class="stat-box"><div class="num mono">#${dongRank.rank}</div><div class="lbl">${dongRank.dong} 순위</div></div>
       </div>
-      <p class="hint" style="margin:10px 0 4px;">레벨업까지 <b class="mono" style="color:var(--ink);">${expInLevel.toLocaleString()} / ${CREW_EXP_PER_LEVEL.toLocaleString()}</b></p>
-      <div class="progress" style="height:8px;margin:0;"><span style="width:${Math.round(expInLevel / CREW_EXP_PER_LEVEL * 100)}%"></span></div>
+      ${(state.crew.concepts || []).length ? `
+      <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;">
+        ${state.crew.concepts.map(c => `<span class="pill pill-accent">#${c}</span>`).join('')}
+      </div>` : ''}
+      <div style="margin-top:auto;">
+        <p class="hint" style="margin:10px 0 4px;">레벨업까지 <b class="mono" style="color:var(--ink);">${expInLevel.toLocaleString()} / ${CREW_EXP_PER_LEVEL.toLocaleString()}</b></p>
+        <div class="progress" style="height:8px;margin:0;"><span style="width:${Math.round(expInLevel / CREW_EXP_PER_LEVEL * 100)}%"></span></div>
+      </div>
     </div>
     <div class="card">
       <p class="section-label">크루 미션 누적점수</p>
@@ -368,16 +381,16 @@ function renderCrewOverview() {
       <span class="gauge-label">${gm.progress.toLocaleString()} / ${gm.target.toLocaleString()}</span>
     </div>
   </div>
-  <div class="card" style="margin-top:14px;max-width:520px;">
+  <div class="card crew-battle-card" style="margin-top:14px;">
     <div class="flex-between">
       <div>
-        <p class="section-label" style="margin:0 0 4px;">5vs5 크루대전</p>
-        <p class="desc" style="margin:0 0 4px;">비슷한 레벨의 크루와 실시간으로 스쿼트 점수 채우기 대결을 해보세요.</p>
-        <p class="hint" style="margin:0;">${partyStatus} ${party.invites ? `<button class="btn btn-ghost btn-sm" style="padding:2px 8px;" onclick="openPartyStatus()">파티 현황 보기</button>` : ''}</p>
+        <h3 style="margin:0 0 6px;color:#fff;font-size:24px;display:flex;align-items:center;gap:10px;">크루대전 <span style="display:flex;gap:3px;color:rgba(255,255,255,.9);">${BATTLE_PERSON_ICON.repeat(5)}</span></h3>
+        <p class="desc" style="margin:0 0 4px;color:rgba(255,255,255,.85);">2vs2, 3vs3, 5vs5 비슷한 레벨의 크루와 실시간으로 점수 채우기 대결을 해보세요.</p>
+        <p class="hint" style="margin:0;color:rgba(255,255,255,.75);">${partyStatus} ${party.invites ? `<button class="btn btn-ghost btn-sm crew-battle-ghost-btn" style="padding:2px 8px;" onclick="openPartyStatus()">파티 현황 보기</button>` : ''}</p>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex:none;">
-        <button class="btn btn-secondary btn-sm" onclick="openPartyInvite()">크루대전파티맺기</button>
-        <button class="btn btn-primary btn-sm" ${party.ready ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'} onclick="startCrewBattle()">대전 시작</button>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none;">
+        <span style="color:#fff;font-family:var(--font-display);font-size:20px;letter-spacing:.04em;">VS</span>
+        <button class="btn crew-battle-cta" style="padding:16px 24px;font-size:15px;" onclick="openPartyInvite()">크루대전파티맺기</button>
       </div>
     </div>
   </div>
@@ -393,7 +406,7 @@ const CREW_CHAT_AUTO_REPLIES = ['오늘도 화이팅!', '저도 방금 시작했
 function renderCrewChat() {
   const msgs = state.crew.chat.messages;
   return `
-  <div class="chat-wrap" style="max-width:560px;">
+  <div class="chat-wrap" style="max-width:860px;margin:0 auto;">
     <div class="chat-log" id="crew-chat-log">
       ${msgs.map(m => `
         <div class="bubble ${m.mine ? 'me' : 'them'}">
@@ -542,6 +555,9 @@ function sendPartyInvites() {
   if (!picked.length) {
     state.crewParty.invites = [];
     state.crewParty.ready = true;
+    // 메인 화면의 "대전 시작" 버튼을 없앴으므로, 파티원 없이 바로 시작하는 경우에도 시작
+    // 버튼이 있는 현황 팝업을 띄워야 실제로 대전을 시작할 방법이 생긴다.
+    state.crewParty.statusOpen = true;
     toast('파티원 없이 바로 대전을 시작할 수 있어요');
     render();
     return;
@@ -549,12 +565,32 @@ function sendPartyInvites() {
   state.crewParty.invites = picked.map(n => ({ n, status: 'pending', timeLeft: 10 }));
   state.crewParty.ready = false;
   state.crewParty.statusOpen = true;
-  toast('파티 신청을 보냈어요 · 10초 안에 수락하면 파티에 합류해요');
-  state.crewParty.invites.forEach(inv => {
-    setTimeout(() => acceptPartyInvite(inv.n), 2000 + Math.random() * 6000);
-  });
+  toast('파티 신청을 보냈어요 · 상단 알림벨에서 10초 안에 수락/거절해야 해요');
+  // 예전엔 2~8초 뒤에 자동으로 수락되는 걸로 흉내냈는데, 지금은 상단 알림벨(🔔)에 뜬 배지를
+  // 눌러 직접 수락/거절하는 방식으로 바꿨다 — 실제로는 초대받은 크루원 각자의 화면에 알림이
+  // 떠야 하지만, 지금은 1인 테스트 계정이라 같은 화면에서 "내가 파티원인 척" 눌러보는 거다.
   startPartyTicker();
   render();
+}
+function pendingPartyInviteCount() {
+  return (state.crewParty.invites || []).filter(x => x.status === 'pending').length;
+}
+function toggleNotifPanel() { state.notifPanelOpen = !state.notifPanelOpen; render(); }
+function closeNotifPanel() { state.notifPanelOpen = false; render(); }
+function renderNotifPanel() {
+  const pending = (state.crewParty.invites || []).filter(x => x.status === 'pending');
+  return `
+  <div class="notif-panel">
+    <h4>크루대전 파티 신청</h4>
+    ${pending.length ? pending.map(inv => `
+      <div class="notif-row">
+        <span>${inv.n}님이 파티에 초대했어요 (${inv.timeLeft}초)</span>
+      </div>
+      <div class="notif-row" style="border-top:none;padding-top:0;gap:8px;">
+        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="rejectPartyInvite('${inv.n}')">거절</button>
+        <button class="btn btn-sm btn-primary" style="flex:1;" onclick="acceptPartyInvite('${inv.n}')">수락</button>
+      </div>`).join('') : '<p class="hint" style="margin:0;">새 알림이 없어요.</p>'}
+  </div>`;
 }
 function acceptPartyInvite(name) {
   const p = state.crewParty;
@@ -565,6 +601,18 @@ function acceptPartyInvite(name) {
   toast(`🔔 ${name}님이 파티 신청을 수락했어요`);
   updatePartyStatusModal();
   checkPartyReady();
+  render();
+}
+function rejectPartyInvite(name) {
+  const p = state.crewParty;
+  if (!p.invites) return;
+  const inv = p.invites.find(x => x.n === name);
+  if (!inv || inv.status !== 'pending') return;
+  inv.status = 'rejected';
+  toast(`${name}님이 파티 신청을 거절했어요`);
+  updatePartyStatusModal();
+  checkPartyReady();
+  render();
 }
 // 실시간 카운트다운·수락 상태는 render()를 다시 타지 않고 상태창 DOM만 직접 패치한다
 // (크루채팅과 마찬가지로, 매초 전체를 다시 그리면 다른 화면에서 입력 중이던 값이 날아간다).
@@ -573,7 +621,7 @@ function updatePartyStatusModal() {
   if (!p.invites) return;
   p.invites.forEach((inv, i) => {
     const el = document.querySelector(`#party-inv-${i} .party-inv-status`);
-    if (el) el.textContent = inv.status === 'accepted' ? '✅ 수락' : inv.status === 'expired' ? '⏱ 시간초과' : `대기중 (${inv.timeLeft}초)`;
+    if (el) el.textContent = inv.status === 'accepted' ? '✅ 수락' : inv.status === 'rejected' ? '❌ 거절' : inv.status === 'expired' ? '⏱ 시간초과' : `대기중 (${inv.timeLeft}초)`;
   });
   const summary = document.getElementById('party-status-summary');
   if (summary) summary.textContent = `${p.invites.filter(x => x.status === 'accepted').length}/${p.invites.length}명 수락`;
@@ -620,7 +668,7 @@ function renderPartyInviteModal() {
         ${others.length ? others.map(m => `
           <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;">
             <input type="checkbox" ${sel.includes(m.n) ? 'checked' : ''} onchange="togglePartyPick('${m.n}')">
-            <span style="flex:1;">${m.n}</span><span class="pill ${m.role === '팀장' ? 'pill-gold' : 'pill-muted'}">${m.role}</span>
+            <span style="flex:1;">${m.n}</span><span class="pill ${m.role === '팀장' ? 'pill-gold' : 'pill-muted'}">${crewRoleLabel(m.role)}</span>
           </label>`).join('') : '<p class="hint" style="margin:0;">초대할 다른 크루원이 없어요.</p>'}
       </div>
       <div class="confirm-actions" style="margin-top:14px;">
@@ -936,26 +984,36 @@ function renderCrewBattle() {
   </div>`}`;
 }
 
-/* ---------- 크루공지: 팀장만 작성 가능 ---------- */
-function renderCrewNotice() {
+/* ---------- 크루공지: 크루 메인 화면 상단에 카드 하나로 보여준다(가장 최근 공지만) ----------
+   크루원에겐 읽기 전용 카드만 보이고, 팀장에게만 "공지수정" 버튼이 붙어서 누르면 그 카드
+   자체가 입력폼으로 바뀐다(별도 작성 카드 없이 같은 자리에서 수정). "공지하기"를 누르면
+   POST로 새 공지가 등록되고, 크루메인에 들어올 때마다(setMenu/setSub) loadCrewNotices()로
+   다시 불러오니 다른 크루원 화면에도 새로고침·재진입하면 바뀐 공지가 보인다. */
+function renderCrewNoticeCard() {
   const isLeader = getMyCrewRole() === '팀장';
+  const latest = state.crew.notices.length ? state.crew.notices[state.crew.notices.length - 1] : null;
+  const editing = isLeader && state.crew.noticeEditing;
   return `
-  ${isLeader ? `
-  <div class="card" style="max-width:520px;margin-bottom:16px;">
-    <p class="section-label">공지 작성</p>
-    <div class="field"><label for="notice-title">제목</label><input id="notice-title" placeholder="예: 우리 크루 단톡방 안내"></div>
-    <div class="field"><label for="notice-body">내용</label><textarea id="notice-body" rows="3" placeholder="크루원에게 전달할 내용을 입력하세요 (예: 카카오톡 오픈채팅 '123' 검색)"></textarea></div>
-    <button class="btn btn-primary" onclick="postCrewNotice()">공지 등록</button>
-  </div>`: ''}
-  <div style="display:flex;flex-direction:column;gap:10px;">
-    ${state.crew.notices.length ? [...state.crew.notices].reverse().map(n => `
-      <div class="card">
-        <div class="flex-between"><h3 style="margin:0;">${n.title}</h3><span class="hint" style="margin:0;">${n.date}</span></div>
-        <p class="desc" style="margin-top:8px;white-space:pre-wrap;">${n.body}</p>
-        <p class="hint" style="margin:0;">작성자 · ${n.who}</p>
-      </div>`).join('') : '<div class="empty-note">아직 등록된 공지가 없어요.</div>'}
+  <div class="card" style="margin-bottom:14px;">
+    <div class="flex-between">
+      <p class="section-label" style="margin:0;">📢 크루 공지</p>
+      ${isLeader && !editing ? `<button class="btn btn-ghost btn-sm" onclick="openCrewNoticeEdit()">공지수정</button>` : ''}
+    </div>
+    ${editing ? `
+    <div class="field" style="margin-top:10px;"><label for="notice-title">제목</label><input id="notice-title" placeholder="예: 우리 크루 단톡방 안내" value="${latest ? latest.title : ''}"></div>
+    <div class="field"><label for="notice-body">내용</label><textarea id="notice-body" rows="3" placeholder="크루원에게 전달할 내용을 입력하세요 (예: 카카오톡 오픈채팅 '123' 검색)">${latest ? latest.body : ''}</textarea></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="cancelCrewNoticeEdit()">취소</button>
+      <button class="btn btn-primary btn-sm" onclick="postCrewNotice()">공지하기</button>
+    </div>` : latest ? `
+    <h3 style="margin:10px 0 4px;">${latest.title}</h3>
+    <p class="desc" style="margin:0 0 6px;white-space:pre-wrap;">${latest.body}</p>
+    <p class="hint" style="margin:0;">작성자 · ${latest.who} · ${latest.date}</p>` : `
+    <p class="empty-note" style="margin:10px 0 0;padding:16px 0;">아직 등록된 공지가 없어요.</p>`}
   </div>`;
 }
+function openCrewNoticeEdit() { state.crew.noticeEditing = true; render(); }
+function cancelCrewNoticeEdit() { state.crew.noticeEditing = false; render(); }
 async function postCrewNotice() {
   const title = document.getElementById('notice-title').value.trim();
   const body = document.getElementById('notice-body').value.trim();
@@ -968,6 +1026,7 @@ async function postCrewNotice() {
     });
     const body2 = await res.json();
     if(!body2.success){ toast(body2.message || '공지 등록에 실패했습니다'); return; }
+    state.crew.noticeEditing = false;
     toast('공지를 등록했습니다');
     await loadCrewNotices();
   }catch(err){
@@ -1005,7 +1064,7 @@ function renderCrewMembers() {
         ${state.crew.members.map(m => `
           <tr>
             <td>${m.n}${m.n === '나' ? ' <span class="pill pill-accent">나</span>' : ''}</td>
-            <td><span class="pill ${m.role === '팀장' ? 'pill-gold' : 'pill-muted'}">${m.role}</span></td>
+            <td><span class="pill ${m.role === '팀장' ? 'pill-gold' : 'pill-muted'}">${crewRoleLabel(m.role)}</span></td>
             <td class="mono">Lv.${m.level}</td>
           </tr>`).join('')}
       </tbody>
@@ -1017,9 +1076,15 @@ function renderCrewManage() {
   if (getMyCrewRole() !== '팀장') { return '<div class="empty-note">팀장만 접근할 수 있는 메뉴입니다.</div>'; }
   const reqs = state.crew.joinRequests;
   return `
-  <div class="card" style="max-width:520px;margin-bottom:20px;">
+  <div class="card" style="max-width:520px;margin:0 auto 20px;">
     <p class="section-label">크루 소개 수정</p>
     <div class="field"><textarea id="crew-desc-edit" rows="3">${state.crew.desc}</textarea></div>
+    <div class="field">
+      <label>크루 컨셉 (최대 ${CREW_CONCEPT_MAX}개, 눌러서 켜고 끄기)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${CREW_CONCEPTS.map(c => `<button type="button" class="btn btn-sm ${state.crew.concepts.includes(c) ? 'btn-primary' : 'btn-secondary'}" onclick="setCrewConcept('${c}')">#${c}</button>`).join('')}
+      </div>
+    </div>
     <button class="btn btn-secondary" onclick="updateCrewDesc()">소개 저장</button>
   </div>
   <p class="section-label">가입 요청 (${reqs.length})</p>
@@ -1043,7 +1108,7 @@ function renderCrewManage() {
         ${state.crew.members.map(m => `
           <tr>
             <td>${m.n}${m.userId === state.user.id ? ' <span class="pill pill-accent">나</span>' : ''}</td>
-            <td><span class="pill ${m.role === '팀장' ? 'pill-gold' : 'pill-muted'}">${m.role}</span></td>
+            <td><span class="pill ${m.role === '팀장' ? 'pill-gold' : 'pill-muted'}">${crewRoleLabel(m.role)}</span></td>
             <td class="mono">Lv.${m.level}</td>
             <td>${m.userId !== state.user.id ? `<button class="btn btn-sm btn-danger" onclick="kickMember(${m.userId})">강퇴</button>` : ''}</td>
           </tr>`).join('')}
@@ -1051,6 +1116,9 @@ function renderCrewManage() {
     </table>
   </div>`;
 }
+// [백엔드 연동 필요] 크루 소개/컨셉 수정 API가 아직 없어서(백엔드에 PATCH /api/crews/me 같은
+// 엔드포인트가 없음), 여기·setCrewConcept()의 컨셉 토글 둘 다 화면(state.crew)에만 반영되고
+// 새로고침하면 서버에 저장된 원래 값으로 되돌아간다. 실제로 저장하려면 크루 수정 API부터 필요.
 function updateCrewDesc() {
   const v = document.getElementById('crew-desc-edit').value.trim();
   if (!v) { toast('소개글을 입력해주세요'); return; }
@@ -1104,6 +1172,26 @@ function getMyDongCrewRank() {
   const rows = [...others, { name: state.crew.name, score: myScore }].sort((a, b) => b.score - a.score);
   return { dong, rank: rows.findIndex(r => r.name === state.crew.name) + 1 };
 }
+// 실제 데이터는 GET /api/rankings/crew?city&gu 로 "구" 단위까지만 집계해서 받아온다(동 단위
+// 집계는 백엔드에 없음). 동 필터는 이미 받아온 구 단위 목록을 프론트에서 한 번 더 걸러
+// 다시 순위를 매기는 방식으로 처리하고, 지도 패널도 같은 데이터를 동별로 묶어서 재사용한다
+// — 그래서 랭킹 목록과 지도가 항상 같은 시/구를 보게 되고(예전엔 각자 다른 시/구를 고를 수
+// 있어서 지도가 목록과 다른 지역을 보여줄 수 있는 버그가 있었다), API 호출도 한 번으로 끝난다.
+async function loadCrewRegionRanking() {
+  const cities = Object.keys(REGION_DATA);
+  const city = REGION_DATA[state.crew.rankCity] ? state.crew.rankCity : cities[0];
+  const gus = Object.keys(REGION_DATA[city]);
+  const gu = REGION_DATA[city][state.crew.rankGu] ? state.crew.rankGu : gus[0];
+  try {
+    const res = await fetch(`${API_BASE}/api/rankings/crew?city=${encodeURIComponent(city)}&gu=${encodeURIComponent(gu)}`);
+    const body = await res.json();
+    if (!body.success) return;
+    state.rank.crew = body.data.map(r => ({ rank: r.rank, name: r.crewName, level: r.level, score: r.totalScore, region: r.region }));
+    render();
+  } catch (err) {
+    console.error('크루 랭킹 불러오기 실패', err);
+  }
+}
 function renderCrewRegionRank() {
   const cities = Object.keys(REGION_DATA);
   const rankCity = REGION_DATA[state.crew.rankCity] ? state.crew.rankCity : cities[0];
@@ -1111,65 +1199,46 @@ function renderCrewRegionRank() {
   const rankGu = REGION_DATA[rankCity][state.crew.rankGu] ? state.crew.rankGu : rankGus[0];
   const dongs = REGION_DATA[rankCity][rankGu];
   const rankDong = dongs.includes(state.crew.rankDong) ? state.crew.rankDong : dongs[0];
-  const rows = getDongCrewRanking(rankDong);
-  const mapCity = REGION_DATA[state.crew.mapCity] ? state.crew.mapCity : cities[0];
-  const mapGus = Object.keys(REGION_DATA[mapCity]);
-  const mapGu = REGION_DATA[mapCity][state.crew.mapGu] ? state.crew.mapGu : mapGus[0];
+  const dongRows = state.rank.crew.filter(r => r.region === rankDong).map((r, i) => ({ ...r, rank: i + 1 }));
+  const rest = dongRows.filter(r => r.rank > 3);
   return `
-  <div class="grid grid-2" style="align-items:start;">
-    <div>
-      <p class="section-label">동네별 크루 랭킹</p>
-      <div class="filter-bar">
-        <select onchange="setCrewRankCity(this.value)">
-          ${cities.map(c => `<option ${c === rankCity ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-        <select onchange="setCrewRankGu(this.value)">
-          ${rankGus.map(g => `<option ${g === rankGu ? 'selected' : ''}>${g}</option>`).join('')}
-        </select>
-        <select onchange="setCrewRankDong(this.value)">
-          ${dongs.map(d => `<option ${d === rankDong ? 'selected' : ''}>${d}</option>`).join('')}
-        </select>
-      </div>
-      ${renderPodium(rows)}
-    </div>
-    <div>
-      <p class="section-label">동네별 1위 크루 지도</p>
-      <div class="filter-bar">
-        <select onchange="setCrewMapCity(this.value)">
-          ${cities.map(c => `<option ${c === mapCity ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-        <select onchange="setCrewMapGu(this.value)">
-          ${mapGus.map(g => `<option ${g === mapGu ? 'selected' : ''}>${g}</option>`).join('')}
-        </select>
-      </div>
-      ${renderCrewMap(mapCity, mapGu)}
-    </div>
-  </div>`;
+  <p class="section-label">동네별 크루 랭킹</p>
+  <div class="filter-bar">
+    <select onchange="setCrewRankCity(this.value)">
+      ${cities.map(c => `<option ${c === rankCity ? 'selected' : ''}>${c}</option>`).join('')}
+    </select>
+    <select onchange="setCrewRankGu(this.value)">
+      ${rankGus.map(g => `<option ${g === rankGu ? 'selected' : ''}>${g}</option>`).join('')}
+    </select>
+    <select onchange="setCrewRankDong(this.value)">
+      ${dongs.map(d => `<option ${d === rankDong ? 'selected' : ''}>${d}</option>`).join('')}
+    </select>
+  </div>
+  ${dongRows.length === 0 ? `<div class="empty-note">이 동네엔 아직 등록된 크루가 없습니다.</div>` : `
+  ${renderPodium(dongRows)}
+  ${rest.length ? `
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>순위</th><th>크루명</th><th>레벨</th><th>누적 점수</th></tr></thead>
+      <tbody>
+        ${rest.map(r => `
+          <tr>
+            <td><span class="rank-num">${r.rank}</span></td>
+            <td>${r.name}</td>
+            <td class="mono">Lv.${r.level}</td>
+            <td class="mono">${r.score.toLocaleString()}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`:''}`}`;
 }
-function renderCrewMap(city, gu) {
-  const dongs = REGION_DATA[city][gu];
-  return `
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
-    ${dongs.map(d => {
-    const top = getDongCrewRanking(d)[0];
-    return `
-      <div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);">
-        <div class="flex-between"><b style="font-size:13px;">${d}</b><span class="pill pill-gold">1위</span></div>
-        <p class="desc" style="margin:6px 0 0;">${top.name}</p>
-        <p class="hint" style="margin-top:2px;">Lv.${top.level} · ${top.score.toLocaleString()}점</p>
-      </div>`;
-  }).join('')}
-  </div>`;
-}
-function setCrewRankCity(v) { state.crew.rankCity = v; state.crew.rankGu = null; state.crew.rankDong = null; render(); }
-function setCrewRankGu(v) { state.crew.rankGu = v; state.crew.rankDong = null; render(); }
-function setCrewRankDong(v) { state.crew.rankDong = v; render(); }
-function setCrewMapCity(v) { state.crew.mapCity = v; state.crew.mapGu = null; render(); }
-function setCrewMapGu(v) { state.crew.mapGu = v; render(); }
+function setCrewRankCity(v) { state.crew.rankCity = v; state.crew.rankGu = null; state.crew.rankDong = null; loadCrewRegionRanking(); render(); }
+function setCrewRankGu(v) { state.crew.rankGu = v; state.crew.rankDong = null; loadCrewRegionRanking(); render(); }
+function setCrewRankDong(v) { state.crew.rankDong = v; render(); } // 동 변경은 이미 받아온 구 단위 데이터를 재필터링만 하면 돼서 재요청 불필요
 
 /* ========================================================================
    4. 랭킹
    ======================================================================== */
-// (FR-RK-001~002) 지금은 getRegionRanking()/getDongCrewRanking()처럼 화면에서 정렬만 흉내내고
-// 있지만, 실제로는 순위를 매기는 연산 자체를 DB에 맡기는 편이 안전합니다.
-//   랭킹 조회(지역/종목/크루) > Java 랭킹 API > DB 연결 > SQL SELECT ... ORDER BY 점수 DESC (필요 시 캐싱)
+// (FR-RK-001~002) 랭킹 탭(ranking.js)의 지역별/종목별/크루 랭킹은 모두 GET /api/rankings/*
+// 실제 API로 연결됨(2026-09-10). getRegionRanking()/getDongCrewRanking()는 랭킹 탭이 아니라
+// 메인 대시보드 요약 위젯에서만 쓰는 가벼운 mock이라 그대로 남겨뒀다(profile.js 참고).

@@ -82,22 +82,24 @@ function renderExStepPick() {
   const remain = Math.max(0, limit - used);
   const noSetsLeft = !state.guestMode && remain <= 0;
   return `
-  <div class="card" style="max-width:420px;margin-bottom:16px;">
-    <p class="section-label" style="margin:0 0 4px;">오늘 가능한 운동세트</p>
-    <p class="desc mono" style="margin:0;">${used} / ${limit}세트 사용 · ${remain > 0 ? `<b style="color:var(--accent);">${remain}세트 남음</b>` : '<b style="color:var(--danger);">모두 사용함</b>'}</p>
-    ${noSetsLeft ? `<p class="hint" style="margin-top:6px;">포인트 상점에서 '세트 추가권'을 구매하면 오늘 바로 더 운동할 수 있어요.</p>` : `<p class="hint" style="margin-top:6px;">레벨업(5레벨마다 +1) 또는 '세트 추가권' 구매로 한도를 늘릴 수 있어요.</p>`}
-  </div>
-  <div class="grid grid-3" style="max-width:420px;">
-    ${EXS.map(e => `
-      <div class="card exercise-card ${state.exercise.picked === e.id ? 'selected' : ''}" onclick="pickExercise('${e.id}')">
-        <div class="ex-badge">${EX_ICONS[e.id] || e.name.charAt(0)}</div>
-        <h3>${e.name}</h3>
-        <p class="desc">타겟: ${e.target}</p>
-        <button class="btn btn-primary btn-block" style="margin-top:12px;${(state.exercise.picked === e.id && !noSetsLeft) ? '' : 'opacity:.4;cursor:not-allowed;'}" ${(state.exercise.picked === e.id && !noSetsLeft) ? '' : 'disabled'} onclick="event.stopPropagation();goToTutorial()">운동 시작하기</button>
-      </div>`).join('')}
-  </div>
-  <div style="margin-top:20px;max-width:420px;">
-    ${renderTutorialMissionList()}
+  <div style="max-width:420px;margin:0 auto;">
+    <div class="card" style="margin-bottom:16px;">
+      <p class="section-label" style="margin:0 0 4px;">오늘 가능한 운동세트</p>
+      <p class="desc mono" style="margin:0;">${used} / ${limit}세트 사용 · ${remain > 0 ? `<b style="color:var(--accent);">${remain}세트 남음</b>` : '<b style="color:var(--danger);">모두 사용함</b>'}</p>
+      ${noSetsLeft ? `<p class="hint" style="margin-top:6px;">포인트 상점에서 '세트 추가권'을 구매하면 오늘 바로 더 운동할 수 있어요.</p>` : `<p class="hint" style="margin-top:6px;">레벨업(5레벨마다 +1) 또는 '세트 추가권' 구매로 한도를 늘릴 수 있어요.</p>`}
+    </div>
+    <div class="grid grid-3">
+      ${EXS.map(e => `
+        <div class="card exercise-card ${state.exercise.picked === e.id ? 'selected' : ''}" onclick="pickExercise('${e.id}')">
+          <div class="ex-badge">${EX_ICONS[e.id] || e.name.charAt(0)}</div>
+          <h3>${e.name}</h3>
+          <p class="desc">타겟: ${e.target}</p>
+          <button class="btn btn-primary btn-block" style="margin-top:12px;${(state.exercise.picked === e.id && !noSetsLeft) ? '' : 'opacity:.4;cursor:not-allowed;'}" ${(state.exercise.picked === e.id && !noSetsLeft) ? '' : 'disabled'} onclick="event.stopPropagation();goToTutorial()">운동 시작하기</button>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:20px;">
+      ${renderTutorialMissionList()}
+    </div>
   </div>`;
 }
 function pickExercise(id) { state.exercise.picked = id; render(); }
@@ -184,8 +186,8 @@ function renderTutorialMissionList() {
     <p class="section-label">개인 일일 미션</p>
     <div style="display:flex;flex-direction:column;gap:8px;max-height:460px;overflow-y:auto;">
       ${missions.map(m => {
-    const cur = Math.min(state.missions.counters[m.metric] || 0, m.target);
-    const done = cur >= m.target;
+    const cur = Math.min(m.current, m.target);
+    const done = m.achieved;
     return `
         <div style="border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;">
           <div class="flex-between">
@@ -287,6 +289,10 @@ function startPoseFeedback() {
   // 태워서 모두 같은 순간에 측정이 시작되게 한다 — 보정이 빠른 사람이 혼자 먼저 시작해버려
   // 팀원마다 측정 시작 시점이 어긋나는 문제 때문에 추가.
   if (state.crewBattle && !state.crewBattle.result) startBattleReadyCountdown();
+  // 튜토리얼에서 "웹캠 촬영 시작"을 누르고도 다음 화면에서 "촬영 시작"을 또 눌러야 하는 게
+  // 번거롭다는 피드백에 따라, 1인 운동 화면(크루대전 제외)에서는 카메라 준비가 끝나는 즉시
+  // 정렬 가이드(toggleRecording의 idle 분기)로 자동 진입한다.
+  if (state.menu === 'exercise' && state.exercise.camPhase === 'idle') toggleRecording();
 }
 let exBattleCountdownStarted = false;
 const CAM_BATTLE_COUNTDOWN_SECONDS = 10;
@@ -1041,7 +1047,13 @@ const REP_HIGHLIGHT_BONES = {
   knee: [[23, 25], [25, 27], [24, 26], [26, 28]],
   torso: [[11, 23], [12, 24]],
 };
-function replayDrawSkeleton(ctx, w, h, landmarks, highlightBones) {
+// xform: <video>가 object-fit:cover로 화면에 그리는 것과 똑같은 스케일+중앙크롭 변환.
+// 캔버스 버퍼 크기가 비디오 원본 해상도와 다르면(리플레이 박스는 화면 크기로 맞춰둠) 그냥
+// p.x*w로 찍으면 영상은 크롭되는데 스켈레톤은 늘어나 버려서 서로 어긋난다 — 반드시 같은
+// 변환을 써야 실제 화면 위치와 맞는다.
+function replayDrawSkeleton(ctx, landmarks, highlightBones, xform) {
+  const toX = nx => xform.offX + nx * xform.vw * xform.scale;
+  const toY = ny => xform.offY + ny * xform.vh * xform.scale;
   const highlightSet = new Set((highlightBones || []).map(b => b.join('-')));
   ctx.lineCap = 'round';
   CAL_CONNECTIONS.forEach(([a, b]) => {
@@ -1050,12 +1062,12 @@ function replayDrawSkeleton(ctx, w, h, landmarks, highlightBones) {
     const isBad = highlightSet.has(a + '-' + b) || highlightSet.has(b + '-' + a);
     ctx.strokeStyle = isBad ? '#E5645A' : '#6FBBEE';
     ctx.lineWidth = isBad ? 5 : 3;
-    ctx.beginPath(); ctx.moveTo(pa.x * w, pa.y * h); ctx.lineTo(pb.x * w, pb.y * h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(pa.x), toY(pa.y)); ctx.lineTo(toX(pb.x), toY(pb.y)); ctx.stroke();
   });
   ctx.fillStyle = '#fff';
   landmarks.forEach(p => {
     if (p.visibility !== undefined && p.visibility < CAL_VIS_THRESHOLD) return;
-    ctx.beginPath(); ctx.arc(p.x * w, p.y * h, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(toX(p.x), toY(p.y), 4, 0, Math.PI * 2); ctx.fill();
   });
 }
 // 내 영상 쪽 실시간 추적용 인스턴스(VIDEO 모드) — exPoseLandmarker(실시간 촬영용)와는 별개 인스턴스.
@@ -1092,7 +1104,10 @@ async function setupReplayComparison() {
     try { landmarker = await loadReplayVideoLandmarker(); } catch (err) { console.error('리플레이 자세 분석 로딩 실패', err); return; }
     if (!document.getElementById('replay-my-canvas')) return; // 로딩 중 화면 이동했을 수 있음
     replayLastVideoTime = -1;
-    const resizeMy = () => { myCanvas.width = video.videoWidth || myCanvas.clientWidth; myCanvas.height = video.videoHeight || myCanvas.clientHeight; };
+    // 캔버스 버퍼를 화면에 실제로 보이는 박스 크기(정사각형/세로 비율)로 맞춘다 — 비디오 원본
+    // 해상도로 맞추면(예전 방식) <video>는 object-fit:cover로 크롭되는데 캔버스는 늘어나면서
+    // 서로 어긋났다. 실제 좌표 변환은 draw 시점에 cover와 같은 스케일+크롭으로 계산한다.
+    const resizeMy = () => { myCanvas.width = myCanvas.clientWidth || video.clientWidth; myCanvas.height = myCanvas.clientHeight || video.clientHeight; };
     resizeMy();
     video.addEventListener('loadedmetadata', resizeMy);
 
@@ -1108,7 +1123,10 @@ async function setupReplayComparison() {
       if (!landmarks) { if (myStatus) myStatus.textContent = '자세가 인식되지 않는 구간이에요'; return; }
       const nearRep = r.compareRep && Math.abs(video.currentTime - (r.compareRep.atSeconds || 0)) < 0.4;
       const highlight = (nearRep && r.compareRep.failedJoint) ? (REP_HIGHLIGHT_BONES[r.compareRep.failedJoint] || []) : [];
-      replayDrawSkeleton(ctx, myCanvas.width, myCanvas.height, landmarks, highlight);
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const scale = Math.max(myCanvas.width / vw, myCanvas.height / vh);
+      const xform = { scale, vw, vh, offX: (myCanvas.width - vw * scale) / 2, offY: (myCanvas.height - vh * scale) / 2 };
+      replayDrawSkeleton(ctx, landmarks, highlight, xform);
       if (myStatus) {
         myStatus.textContent = nearRep
           ? (r.compareRep.failedJoint
@@ -1147,13 +1165,13 @@ function renderReplayPopup() {
   <div class="grid grid-2" style="margin-bottom:8px;">
     <div>
       <p class="section-label">레퍼런스 정자세</p>
-      <div class="cam-stage" style="aspect-ratio:1/1;">
+      <div class="cam-stage replay-cam-stage">
         <img src="Bodyweight_Squats.gif" alt="레퍼런스 스쿼트" style="width:100%;height:100%;object-fit:cover;">
       </div>
     </div>
     <div>
       <p class="section-label">내 촬영 영상</p>
-      <div class="cam-stage" style="aspect-ratio:1/1;">
+      <div class="cam-stage replay-cam-stage">
         <video id="replay-my-video" src="${r.myVideoUrl}" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>
         <canvas id="replay-my-canvas" class="cam-overlay-canvas" style="pointer-events:none;"></canvas>
       </div>
@@ -1233,7 +1251,7 @@ function renderExStepSave() {
   const r = state.exercise.result;
   if (!r) return `<div class="empty-note">저장할 결과가 없습니다.</div>`;
   return `
-  <div class="card" style="max-width:520px;">
+  <div class="card" style="max-width:520px;margin:0 auto;">
     <p class="section-label">획득 요약</p>
     <h3 style="font-size:20px;">${r.ex} 세션 완료 ${gradePill(r.acc > 90 ? 'PERFECT' : r.acc > 78 ? 'GREAT' : r.acc > 60 ? 'GOOD' : 'MISS')}</h3>
     <div class="stat-row">
@@ -1277,14 +1295,7 @@ async function saveExerciseResult() {
     const pts = body.data.pointsAwarded;
 
     await loadExerciseHistory();
-    if (r.ex === '스쿼트') {
-      const c = state.missions.counters;
-      c.reps += r.valid;
-      c.perfect += gc.PERFECT;
-      c.sessions += 1;
-      if (gc.MISS === 0) c.missFreeSession += 1;
-      if (r.acc >= 90) c.accSession += 1;
-    }
+    if (r.ex === '스쿼트') await loadTodayMissions(); // 서버가 방금 저장한 세션으로 미션 카운터를 이미 갱신했으므로 다시 불러와 반영
     if (state.crew.created && r.ex === state.crew.groupMission.ex) {
       const gm = state.crew.groupMission;
       gm.progress = Math.min(gm.target, gm.progress + r.valid);
@@ -1302,9 +1313,9 @@ async function saveExerciseResult() {
 /* ========================================================================
    2. 미션·포인트
    ======================================================================== */
-// (FR-MS-001) claimMission()에서 보상을 지급하는 지점부터 서버 연동이 필요합니다.
-//   세션 저장(saveExerciseResult) > Java 미션 API > DB 연결 > SQL UPDATE(미션 진행 카운터)
-//   보상 수령(claimMission) > Java 미션 API > DB 연결 > SQL UPDATE(포인트 잔액, 수령 여부)
+// 미션은 서버(MissionController/MissionService)와 완전히 연동되어 있다 — 세션 저장
+// (saveExerciseResult)이 성공하면 서버가 이미 미션 카운터까지 갱신해두므로 loadTodayMissions()로
+// 다시 받아오기만 하고, 보상 수령(claimMission)은 POST /api/missions/{id}/claim으로 처리한다.
 // 미션 카테고리는 폐지했다 — 운동 탭 종목선택 화면에 이미 진행 중인 미션이 리스트로 보이고
 // (renderTutorialMissionList), 보상 수령은 마이페이지 "미션 달성 현황" 탭(renderMissionProgress)
 // 에서 하므로 별도 메뉴가 중복이었다.

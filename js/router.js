@@ -13,6 +13,7 @@ function render() {
   if (state.itemPreview.open) root.innerHTML += renderItemPreviewModal();
   if (state.crewParty.open) root.innerHTML += renderPartyInviteModal();
   if (state.crewParty.statusOpen) root.innerHTML += renderPartyStatusModal();
+  if (state.publicProfileModal.open) root.innerHTML += renderPublicProfileModal();
   if (state.exercise.replayOpen) root.innerHTML += renderReplayPopup();
   // 캘리브레이션 모달은 회원가입 화면뿐 아니라, 운동 탭에서 "캘리브레이션 필수" 조건에 걸려
   // 열릴 수도 있으므로 화면(screen)과 무관하게 calModalOpen 플래그만 본다.
@@ -54,6 +55,9 @@ function render() {
     setTimeout(drawTopbarAvatar, 0);
     setTimeout(drawPodiumChars, 0);
   }
+  if (state.screen === 'app' && state.menu === 'main') {
+    setTimeout(drawMainCharCanvas, 0);
+  }
 }
 
 /* ---------- 소개(랜딩) 페이지 ---------- */
@@ -83,20 +87,31 @@ function renderApp() {
         <div class="navitem ${state.menu === m.id ? 'active' : ''}" onclick="setMenu('${m.id}')">
           <span class="navicon"></span><span class="navicon-emoji">${m.icon}</span><span class="navlabel">${m.label}</span>
         </div>`).join('')}
+      <div class="sidebar-footer">
+        <div class="navitem" onclick="${state.guestMode ? "goto('login')" : 'doLogout()'}">
+          <span class="navicon"></span><span class="navicon-emoji">🚪</span><span class="navlabel">${state.guestMode ? '로그인' : '로그아웃'}</span>
+        </div>
+      </div>
     </aside>
     <div class="main">
       <div class="topbar">
         <div>
-          <div class="topbar-title">${state.guestMode ? `<span style="cursor:pointer;text-decoration:underline;" onclick="goto('login')">동네설정하기</span>` : (state.user.region || `<span style="cursor:pointer;text-decoration:underline;" onclick="goToAccountSettings()">동네설정하기</span>`)}</div>
+          <div class="topbar-title" style="cursor:pointer;text-decoration:underline;" onclick="${state.guestMode ? "goto('login')" : 'goToAccountSettings()'}" title="계정관리에서 동네 바꾸기">${state.guestMode ? '동네설정하기' : (state.user.region || '동네설정하기')}</div>
         </div>
         <div class="user-chip">
-          <div class="points-pill">P <span class="mono">${state.guestMode ? 0 : state.user.points.toLocaleString()}</span></div>
+          <div class="points-pill" style="cursor:pointer;" onclick="${state.guestMode ? "goto('login')" : "setMenu('shop')"}" title="포인트 상점으로">P <span class="mono">${state.guestMode ? 0 : state.user.points.toLocaleString()}</span></div>
+          ${state.guestMode ? '' : `
+          <div class="topbar-notif" onclick="toggleNotifPanel()" title="알림">
+            🔔
+            ${pendingPartyInviteCount() > 0 ? `<span class="notif-badge">${pendingPartyInviteCount()}</span>` : ''}
+          </div>`}
           <span class="topbar-nick">${state.guestMode ? '비회원' : (state.user.nickname || '홈트초보')}</span>
-          <div class="topbar-avatar" onclick="setMenu('profile')" title="마이페이지">
+          <div class="topbar-avatar" onclick="setMenu('profile');setSub('profile',0);" title="마이페이지 · 캐릭터 꾸미기">
             <canvas id="topbar-avatar-canvas"></canvas>
             <span class="mono">Lv.${state.guestMode ? 0 : state.user.level}</span>
           </div>
         </div>
+        ${state.notifPanelOpen ? renderNotifPanel() : ''}
       </div>
       <div class="view">
         ${state.menu === 'main' ? renderMain() :
@@ -123,8 +138,18 @@ async function setMenu(id){
   if(id==='crew'){
     await loadMyCrew();
     if(!state.crew.created){ await loadJoinableCrews(); }
-    else { connectCrewChat(); }
+    else { connectCrewChat(); await loadCrewNotices(); } // 공지가 크루메인에 바로 보이니 메뉴 들어올 때마다 최신화
     render();
+  } else if(id==='support'){
+    await loadSupportTickets();
+    if(state.user.role === 'ADMIN') await loadAllSupportTickets();
+  } else if(id==='ranking'){
+    const idx = state.subtabs.ranking || 0;
+    if(idx===0) await loadRegionRanking();
+    else if(idx===1) await loadExerciseRanking();
+    else await loadCrewRegionRanking();
+  } else if(id==='exercise' || id==='profile'){
+    await loadTodayMissions(); // 종목선택 화면의 미션 리스트·마이페이지 미션 탭 둘 다 이 값을 쓴다
   }
 }
 
@@ -145,10 +170,15 @@ function goto(screen) { state.guestMode = false; state.screen = screen; render()
 function setSub(key, idx) {
   state.subtabs[key] = idx;
   if(key==='crew' && getMyCrewRole()==='팀장') loadCrewJoinRequests();
-  if (key === 'crew' && idx === 2) loadCrewNotices();
+  if (key === 'crew' && idx === 0) loadCrewNotices(); // 크루메인으로 돌아올 때마다 공지 최신화
   // 채팅·크루원 실시간 소켓 자체는 홈크루 메뉴에 들어와 있는 동안 계속 연결돼 있다(setMenu
   // 참고) — 여기서는 채팅 탭을 열 때 최근 대화 내역만 REST로 새로 불러온다.
   if (key === 'crew' && idx === 1) loadCrewChatHistory();
+  if (key === 'ranking') {
+    if (idx === 0) loadRegionRanking();
+    else if (idx === 1) loadExerciseRanking();
+    else loadCrewRegionRanking();
+  }
   render();
 }
 
